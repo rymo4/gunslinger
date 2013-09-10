@@ -11,7 +11,7 @@ public class Player extends gunslinger.sim.Player
     private static int versions = 0;
     // my version no
     private int version = versions++;
-    
+
     // A simple fixed shoot rate strategy used by the dumb player
     private static double ShootRate = 0.8;
 
@@ -21,7 +21,7 @@ public class Player extends gunslinger.sim.Player
     {
         return "Group 1" + (versions > 1 ? " v" + version : "");
     }
- 
+
     // Initialize the player
     //
     public void init(int nplayers, int[] friends, int enemies[])
@@ -30,8 +30,8 @@ public class Player extends gunslinger.sim.Player
         //  Seed your random generator carefully
         //  if you want to repeat the same random number sequence
         //  pick your favourate seed number as the seed
-        //  Or you can simply use the clock time as your seed     
-        //       
+        //  Or you can simply use the clock time as your seed
+        //
         gen = new Random(System.currentTimeMillis());
         // long seed = 12345;
         // gen = new Random(seed);
@@ -54,7 +54,7 @@ public class Player extends gunslinger.sim.Player
         /* Strategy used by the dumb player:
            Decide whether to shoot or not with a fixed shoot rate
            If decided to shoot, randomly pick one alive that is not your friend */
-                
+
         // Shoot or not in this round?
         boolean shoot = gen.nextDouble() < ShootRate;
 
@@ -69,7 +69,6 @@ public class Player extends gunslinger.sim.Player
         int target = targets.get(gen.nextInt(targets.size()));
         return target;
     }
-
 
     private Random gen;
     private int nplayers;
