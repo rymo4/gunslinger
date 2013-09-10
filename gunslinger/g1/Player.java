@@ -1,4 +1,4 @@
-package gunslinger.dumb;
+package gunslinger.g1;
 
 import java.util.*;
 
@@ -19,7 +19,7 @@ public class Player extends gunslinger.sim.Player
     //
     public String name()
     {
-        return "dumb" + (versions > 1 ? " v" + version : "");
+        return "Group 1" + (versions > 1 ? " v" + version : "");
     }
  
     // Initialize the player
