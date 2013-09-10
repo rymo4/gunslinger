@@ -19,6 +19,11 @@ public class Test
           fail = true;
           System.out.println(out);
         }
+        out = containsForArrays();
+        if (out != "") {
+          fail = true;
+          System.out.println(out);
+        }
 
         if (fail) {
             System.out.println("FAIL");
@@ -29,9 +34,17 @@ public class Test
     }
 
     private static String shootsEnemyOnFirstRound(){
-        int target = player.shoot(new int[]{}, new boolean[]{true, true, true, true, true});
+        int target = player.shoot(new int[]{0,0,0,0,0}, new boolean[]{true, true, true, true, true});
         if (target != 4)
             return "Shot player " + target + " instead of player 4";
+        return "";
+    }
+
+    private static String containsForArrays(){
+        boolean contains = player.contains(2, new int[]{1,2,3});
+        if (!contains) return "said [1,2,3] doesnt contain 2";
+        contains = player.contains(4, new int[]{1,2,3});
+        if (contains) return "said [1,2,3] contains 4";
         return "";
     }
 }

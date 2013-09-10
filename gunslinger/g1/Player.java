@@ -13,8 +13,18 @@ public class Player extends gunslinger.sim.Player
 
     public static final String VERSION = "0.0.2";
 
+    // Attributes to use in the feature vector
+    private final int NUM_FEATURES = 5;
+
+    private final int ENEMY        = 0;
+    private final int FRIEND       = 1;
+    private final int NONE         = 2;
+    private final int FOE          = 3;
+    private final int FRIENDS_FOE  = 4;
+
+    private final float[] coeffs = new float[]{5.0f,-5.0f, 0.0f, 20.0f, 5.0f};
+
     // name of the team
-    //
     public String name()
     {
         return "g1(" + VERSION + ")" + (versions > 1 ? " v" + playerNumber : "");
@@ -37,6 +47,9 @@ public class Player extends gunslinger.sim.Player
         this.nplayers = nplayers;
         this.friends = friends.clone();
         this.enemies = enemies.clone();
+
+        this.featureVectors = new int[nplayers][NUM_FEATURES];
+        initFeatureVectors();
     }
 
     // Pick a target to shoot
@@ -50,7 +63,9 @@ public class Player extends gunslinger.sim.Player
     public int shoot(int[] prevRound, boolean[] alive)
     {
         updateLists(alive);
+        updateFeatureVectors(prevRound, alive);
 
+        /*
         ArrayList<Integer> targets = new ArrayList<Integer>();
         for (int i = 0; i != nplayers; i++) {
             if (validTarget(i, alive)) {
@@ -66,11 +81,60 @@ public class Player extends gunslinger.sim.Player
                 }
             }
         }
+        */
 
         // If only friends, don't shoot
-        if (targets.size() == 0) return -1;
+        // if (targets.size() == 0) return -1;
 
-        return targets.get(gen.nextInt(targets.size()));
+        int[] playersScores = new int[nplayers];
+        for (int i = 0; i < nplayers; i++){
+            // featureVectors[i] dot coeffs
+            for (int j = 0; j < NUM_FEATURES; j++){
+                playersScores[i] += coeffs[j] * featureVectors[i][j];
+            }
+        }
+
+        // find biggest score, -1 if score is negative
+        int playerToShoot = -1;
+        float biggestScore = 0.0f;
+        for (int i = 0; i < nplayers; i++) {
+          if (playersScores[i] > biggestScore) {
+              biggestScore = playersScores[i];
+              playerToShoot = i;
+          }
+        }
+
+        return playerToShoot;
+    }
+
+    // TODO: fix dumb logic
+    private void initFeatureVectors(){
+        for (int i : friends){
+            featureVectors[i][FRIEND] = 1;
+        }
+        for (int i : enemies){
+            featureVectors[i][ENEMY] = 1;
+        }
+        for (int i = 0; i < nplayers; i++){
+            if (!contains(i, enemies) && !contains(i, friends))
+                featureVectors[i][NONE] = 1;
+        }
+    }
+
+    private void updateFeatureVectors(int[] prevRound, boolean[] alive)
+    {
+        if (prevRound == null) return;
+
+        for (int i = 0; i < nplayers; i++){
+            // player i last shot lastShot
+            int lastShot = prevRound[i];
+            if (contains(lastShot, friends))
+                featureVectors[i][FRIENDS_FOE]++;
+            if (lastShot == id)
+                // TODO: make this number of ur friends he has shot,
+                // not number of times he has shot ur friends
+                featureVectors[i][FOE]++;
+        }
     }
 
     // helper to fill lists with living friends and enemies
@@ -81,27 +145,19 @@ public class Player extends gunslinger.sim.Player
 
         for (int i = 0; i < nplayers; i++){
             if (alive[i]) {
-                boolean contains = false;
-                for (int friend : friends){
-                    if (friend == i){
-                        contains = true;
-                        break;
-                    }
-                }
-                if (contains)
-                    livingFriends.add(i);
-
-                contains = false;
-                for (int enemy : enemies){
-                    if (enemy == i){
-                        contains = true;
-                        break;
-                    }
-                }
-                if (contains)
+                if (contains(i, enemies))
                     livingEnemies.add(i);
+                if (contains(i, friends))
+                    livingFriends.add(i);
             }
         }
+
+    }
+
+    public boolean contains(int player, int[] lst){
+        for (int i : lst)
+            if (i == player) return true;
+        return false;
     }
 
     private boolean validTarget(int player, boolean[] alive)
@@ -118,4 +174,6 @@ public class Player extends gunslinger.sim.Player
 
     private ArrayList<Integer> livingFriends;
     private ArrayList<Integer> livingEnemies;
+
+    private int[][] featureVectors;
 }
