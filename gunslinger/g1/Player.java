@@ -9,17 +9,15 @@ public class Player extends gunslinger.sim.Player
 {
     // total versions of the same player
     private static int versions = 0;
-    // my version no
-    private int version = versions++;
+    private int playerNumber = versions++;
 
-    // A simple fixed shoot rate strategy used by the dumb player
-    private static double ShootRate = 0.8;
+    public static final String VERSION = "0.0.2";
 
     // name of the team
     //
     public String name()
     {
-        return "Group 1" + (versions > 1 ? " v" + version : "");
+        return "g1(" + VERSION + ")" + (versions > 1 ? " v" + playerNumber : "");
     }
 
     // Initialize the player
@@ -51,27 +49,73 @@ public class Player extends gunslinger.sim.Player
     //
     public int shoot(int[] prevRound, boolean[] alive)
     {
-        /* Strategy used by the dumb player:
-           Decide whether to shoot or not with a fixed shoot rate
-           If decided to shoot, randomly pick one alive that is not your friend */
-
-        // Shoot or not in this round?
-        boolean shoot = gen.nextDouble() < ShootRate;
-
-        if (!shoot)
-            return -1;
+        updateLists(alive);
 
         ArrayList<Integer> targets = new ArrayList<Integer>();
-        for (int i = 0; i != nplayers; ++i)
-            if (i != id && alive[i] && !Arrays.asList(friends).contains(i))
-                targets.add(i);
+        for (int i = 0; i != nplayers; i++) {
+            if (validTarget(i, alive)) {
+                // If you have living enemies, shoot one
+                if (livingEnemies.size() > 0) {
+                  if (livingEnemies.contains(i)) {
+                      targets.add(i);
+                  }
+                }
+                // If you have no living enemies, pick a non friend to shoot
+                else if (!livingFriends.contains(i)) {
+                    targets.add(i);
+                }
+            }
+        }
 
-        int target = targets.get(gen.nextInt(targets.size()));
-        return target;
+        // If only friends, don't shoot
+        if (targets.size() == 0) return -1;
+
+        return targets.get(gen.nextInt(targets.size()));
+    }
+
+    // helper to fill lists with living friends and enemies
+    private void updateLists(boolean[] alive)
+    {
+        livingFriends = new ArrayList<Integer>();
+        livingEnemies = new ArrayList<Integer>();
+
+        for (int i = 0; i < nplayers; i++){
+            if (alive[i]) {
+                boolean contains = false;
+                for (int friend : friends){
+                    if (friend == i){
+                        contains = true;
+                        break;
+                    }
+                }
+                if (contains)
+                    livingFriends.add(i);
+
+                contains = false;
+                for (int enemy : enemies){
+                    if (enemy == i){
+                        contains = true;
+                        break;
+                    }
+                }
+                if (contains)
+                    livingEnemies.add(i);
+            }
+        }
+    }
+
+    private boolean validTarget(int player, boolean[] alive)
+    {
+        return player != id && alive[player];
     }
 
     private Random gen;
+
+    // Should never change. The initial info about the world
     private int nplayers;
     private int[] friends;
     private int[] enemies;
+
+    private ArrayList<Integer> livingFriends;
+    private ArrayList<Integer> livingEnemies;
 }

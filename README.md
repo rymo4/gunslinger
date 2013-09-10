@@ -56,3 +56,10 @@ Gunslinger README]
 * Added initial given player and sim
 * Copied the player into a new base player class in `gunslinger/g1/Player.java`
 to work from
+
+### v0.0.2
+
+* If you have enemies, shoot a random one. If you don't have any enemies, shoot
+a non friend. If you dont have any non friends, don't shoot.
+* Simplest actual strategy, with 1 g1 and 8 dumb players, the single g1 player
+wins about 50% of the games.
