@@ -1,6 +1,6 @@
-![gunslinger](https://raw.github.com/rymo4/gunslinger/master/gunslinger.png)
-
 # Gunslinger
+
+![gunslinger](https://raw.github.com/rymo4/gunslinger/master/gunslinger.png)
 
 A solution for a puzzle game that uses a variety of learning techniques, by [Ryder Moody](http://github.com/rymo4) and [Enrique Cruz](http://github.com/eac2192).
 
