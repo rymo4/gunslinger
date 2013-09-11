@@ -33,9 +33,9 @@ public class AiPlayer
 
   //CONSTANTS
   private float ENEMY_VAL = 5.0f;
-  private float FRIEND_VAL = -5.0f;
+  private float FRIEND_VAL = -10.0f;
   private float NONE_VAL = 0.0f;
-  private float FOE_VAL = 20.0f;
-  private float FRIENDS_FOE_VAL = 5.0f;
+  private float FOE_VAL = 10.0f;
+  private float FRIENDS_FOE_VAL = 4.0f;
 
 }
