@@ -1,5 +1,11 @@
 # Gunslinger
 
+![gunslinger](https://raw.github.com/rymo4/gunslinger/master/gunslinger.png)
+
+A solution for a puzzle game that uses a variety of learning techniques, by [Ryder Moody](http://github.com/rymo4) and [Enrique Cruz](http://github.com/eac2192).
+
+## The Rules
+
 It is the wild west, and you find yourself among a circle of N outlaws all
 bearing grudges and loyalties from past encounters. In particular, each outlaw
 has a list of exactly f friends and a list of e enemies (the two lists are
@@ -45,6 +51,7 @@ try different settings for e, f, and N and see how they influence strategy.
 
 ```bash
 $ cd [this dir]
+$ javac gunslinger.sim.Gunslinger
 $ java gunslinger.sim.Gunslinger gunslinger/players.list [options given in
 Gunslinger README]
 ```
@@ -63,3 +70,10 @@ to work from
 a non friend. If you dont have any non friends, don't shoot.
 * Simplest actual strategy, with 1 g1 and 8 dumb players, the single g1 player
 wins about 50% of the games.
+
+### v0.1.0
+
+* First real take on strategy: use a feature vector with hard coded weights.
+* Features in Vector: "enemy", "friend", "foe" (has shot me), "friend's foe", and "no relationship".
+* Feature vector starts as best guess for definitions of players, updates over time. Player with highest score is shot.
+* Weights picked with common sense. Will use learning techniques to optimize these weights in future.

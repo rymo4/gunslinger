@@ -1,9 +1,14 @@
 package gunslinger.g1;
 import java.util.*;
 
-// An example player
-// Extends gunslinger.sim.Player to start with your player
-//
+/* 
+  A class representing all players in the game who are not controlled by the g1.Player class.
+  This encapsulates the ML used to guess what the other players will do next, meaning we
+  can optimize our own actions to take advantage of their actions. 
+  
+  AI learning from AI, so meta.
+*/
+
 public class AiPlayer 
 {
 
@@ -31,7 +36,7 @@ public class AiPlayer
     return friend*FRIEND_VAL + foe*FOE_VAL + friends_foe*FRIENDS_FOE_VAL + enemy*ENEMY_VAL + none*NONE_VAL;
   }
 
-  //CONSTANTS
+  // CONSTANTS
   private float ENEMY_VAL = 5.0f;
   private float FRIEND_VAL = -10.0f;
   private float NONE_VAL = 0.0f;
