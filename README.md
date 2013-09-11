@@ -1,4 +1,4 @@
-![gunslinger](https://github.com/rymo4/gunslinger/blob/master/README.md)
+![gunslinger](https://raw.github.com/rymo4/gunslinger/master/gunslinger.png)
 
 # Gunslinger
 
