@@ -1,6 +1,6 @@
 # Gunslinger
 
-A solution for solving a puzzle game using learning techniques.
+A solution for solving a puzzle game using learning techniques, by [Ryder Moody](http://github.com/rymo4) and [Enrique Cruz](http://github.com/eac2192).
 
 ## The Rules
 
