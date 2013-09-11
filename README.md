@@ -2,7 +2,7 @@
 
 # Gunslinger
 
-A solution for solving a puzzle game using learning techniques, by [Ryder Moody](http://github.com/rymo4) and [Enrique Cruz](http://github.com/eac2192).
+A solution for a puzzle game that uses a variety of learning techniques, by [Ryder Moody](http://github.com/rymo4) and [Enrique Cruz](http://github.com/eac2192).
 
 ## The Rules
 
@@ -51,6 +51,7 @@ try different settings for e, f, and N and see how they influence strategy.
 
 ```bash
 $ cd [this dir]
+$ javac gunslinger.sim.Gunslinger
 $ java gunslinger.sim.Gunslinger gunslinger/players.list [options given in
 Gunslinger README]
 ```
