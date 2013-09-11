@@ -146,11 +146,15 @@ public class Player extends gunslinger.sim.Player
     private void updateFeatureVectors(int[] prevRound, boolean[] alive)
     {
         if (prevRound == null) return;
-
+        for (int i = 0; i < nplayers; i++){
+            players[i].shot = 0;
+        }
         for (int i = 0; i < nplayers; i++){
             // player i last shot lastShot
             int lastShot = prevRound[i];
             if (lastShot >= 0) {
+                if(i != id)
+                    players[lastShot].shot++;
                 if (players[id].friends[lastShot])
                     players[i].friends_foe++;
                 if (lastShot == id)
@@ -170,9 +174,9 @@ public class Player extends gunslinger.sim.Player
 
     }
 
-    public boolean contains(int player, int[] lst){
-        //  if (lst == null) return false
-        for (int i : lst)
+    public boolean contains(int player, int[] lst)
+    {
+         for (int i : lst)
             if (i == player) return true;
         return false;
     }
