@@ -3,9 +3,6 @@ package gunslinger.g1;
 import java.util.*;
 import gunslinger.g1.AiPlayer;
 
-// An example player
-// Extends gunslinger.sim.Player to start with your player
-//
 public class Player extends gunslinger.sim.Player
 {
     // total versions of the same player
@@ -25,24 +22,17 @@ public class Player extends gunslinger.sim.Player
 
     private Random gen;
 
-    // Should never change. The initial info about the world
     private int nplayers;
     private int[] friends;
     private int[] enemies;
 
-    private int[][] featureVectors;
     private AiPlayer[] players;
 
-    private final float[] coeffs = new float[]{5.0f,-5.0f, 0.0f, 20.0f, 5.0f};
-
-    // name of the team
     public String name()
     {
         return "g1(" + VERSION + ")" + (versions > 1 ? " v" + playerNumber : "");
     }
 
-    // Initialize the player
-    //
     public void init(int nplayers, int[] friends, int enemies[])
     {
         // Note:
@@ -57,22 +47,19 @@ public class Player extends gunslinger.sim.Player
 
         this.nplayers = nplayers;
 
-        //this.featureVectors = new int[nplayers][NUM_FEATURES];
         initFeatureVectors(nplayers, enemies, friends);
     }
 
-    // TODO: fix dumb logic
     private void initFeatureVectors(int n, int[] e, int[] f)
     {
         // Initialize all the players based on specific game values
         this.players = new AiPlayer[n];
-        for(int i = 0; i < n; i++)
-        {   
+        for(int i = 0; i < n; i++) {
             this.players[i] = new AiPlayer(n, e.length, f.length);
         }
         // Initialize player attributes based on initial friend and foe lists
         for(int i = 0; i < n; i++)
-        {  
+        {
             if(this.id == i)
             {
                 this.players[i].me = true;
@@ -103,27 +90,6 @@ public class Player extends gunslinger.sim.Player
     {
         updateLists(alive);
         updateFeatureVectors(prevRound, alive);
-
-        /*
-        ArrayList<Integer> targets = new ArrayList<Integer>();
-        for (int i = 0; i != nplayers; i++) {
-            if (validTarget(i, alive)) {
-                // If you have living enemies, shoot one
-                if (livingEnemies.size() > 0) {
-                  if (livingEnemies.contains(i)) {
-                      targets.add(i);
-                  }
-                }
-                // If you have no living enemies, pick a non friend to shoot
-                else if (!livingFriends.contains(i)) {
-                    targets.add(i);
-                }
-            }
-        }
-        */
-
-        // If only friends, don't shoot
-        // if (targets.size() == 0) return -1;
 
         int[] playersScores = new int[nplayers];
         for (int i = 0; i < nplayers; i++){
@@ -159,7 +125,7 @@ public class Player extends gunslinger.sim.Player
         }
     }
 
-    // helper to fill lists with living friends and enemies
+    // TODO: combine with updateFeatureVectors
     private void updateLists(boolean[] alive)
     {
         for (int i = 0; i < nplayers; i++){
@@ -167,7 +133,6 @@ public class Player extends gunslinger.sim.Player
                 this.players[i].dead = true;
             }
         }
-
     }
 
     public boolean contains(int player, int[] lst){

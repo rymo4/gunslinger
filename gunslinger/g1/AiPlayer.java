@@ -1,11 +1,7 @@
 package gunslinger.g1;
 import java.util.*;
 
-// An example player
-// Extends gunslinger.sim.Player to start with your player
-//
-public class AiPlayer 
-{
+public class AiPlayer {
 
   public boolean me, dead;
   public int friend, foe, friends_foe, enemy, none, max_e, max_f;
@@ -31,11 +27,10 @@ public class AiPlayer
     return friend*FRIEND_VAL + foe*FOE_VAL + friends_foe*FRIENDS_FOE_VAL + enemy*ENEMY_VAL + none*NONE_VAL;
   }
 
-  //CONSTANTS
+  // coeffs
   private float ENEMY_VAL = 5.0f;
   private float FRIEND_VAL = -5.0f;
   private float NONE_VAL = 0.0f;
   private float FOE_VAL = 20.0f;
   private float FRIENDS_FOE_VAL = 5.0f;
-
 }
