@@ -1,7 +1,6 @@
 package gunslinger.g1;
 import java.util.*;
 
-public class AiPlayer {
 /*
   A class representing all players in the game who are not controlled by the g1.Player class.
   This encapsulates the ML used to guess what the other players will do next, meaning we
