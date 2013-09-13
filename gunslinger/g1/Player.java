@@ -12,11 +12,12 @@ public class Player extends gunslinger.sim.Player
     // Attributes to use in the feature vector
     private final int NUM_FEATURES = 5;
 
-    private final int ENEMY        = 0;
-    private final int FRIEND       = 1;
-    private final int NONE         = 2;
-    private final int FOE          = 3;
-    private final int FRIENDS_FOE  = 4;
+    public int FRIEND       = 0;
+    public int SHOT         = 1;
+    public int FOE          = 2;
+    public int FRIENDS_FOE  = 3;
+    public int ENEMY        = 4;
+    public int NONE         = 5;
 
     private Random gen;
 
@@ -64,12 +65,12 @@ public class Player extends gunslinger.sim.Player
             }
             else if (contains(i, e))
             {
-                this.players[i].enemy = 1;
+                this.players[i].attrs[ENEMY] = 1;
                 this.players[this.id].enemies[i] = true;
             }
             else if (contains(i,f))
             {
-                this.players[i].friend = 1;
+                this.players[i].attrs[FRIEND] = 1;
                 this.players[this.id].friends[i] = true;
                 this.players[i].friends[this.id] = true;
             }
@@ -88,6 +89,10 @@ public class Player extends gunslinger.sim.Player
     {
         updateLists(alive);
         updateFeatureVectors(prevRound, alive);
+
+        if (prevRound == null || prevRound.length == 0){
+            return -1;
+        }
 
         int[] playersScores = new int[nplayers];
         for (int i = 0; i < nplayers; i++){
@@ -111,18 +116,18 @@ public class Player extends gunslinger.sim.Player
     {
         if (prevRound == null) return;
         for (int i = 0; i < nplayers; i++){
-            players[i].shot = 0;
+            players[i].attrs[SHOT] = 0;
         }
         for (int i = 0; i < nplayers; i++){
             // player i last shot lastShot
             int lastShot = prevRound[i];
             if (lastShot >= 0) {
                 if(i != id)
-                    players[lastShot].shot++;
+                    players[lastShot].attrs[SHOT]++;
                 if (players[id].friends[lastShot])
-                    players[i].friends_foe++;
+                    players[i].attrs[FRIENDS_FOE]++;
                 if (lastShot == id)
-                    players[i].foe++;
+                    players[i].attrs[FOE]++;
             }
         }
     }
