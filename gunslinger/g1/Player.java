@@ -1,7 +1,5 @@
 package gunslinger.g1;
-
 import java.util.*;
-import gunslinger.g1.AiPlayer;
 
 public class Player extends gunslinger.sim.Player
 {
