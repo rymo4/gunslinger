@@ -26,6 +26,8 @@ public class Player extends gunslinger.sim.Player
     private int[] enemies;
 
     private AiPlayer[] players;
+    
+    private Relationship relationship;
 
     public String name()
     {
@@ -47,6 +49,7 @@ public class Player extends gunslinger.sim.Player
         this.nplayers = nplayers;
 
         initFeatureVectors(nplayers, enemies, friends);
+        relationship=new Relationship(nplayers);
     }
 
     private void initFeatureVectors(int n, int[] e, int[] f)
@@ -89,7 +92,9 @@ public class Player extends gunslinger.sim.Player
     {
         updateLists(alive);
         updateFeatureVectors(prevRound, alive);
-
+        
+        relationship.update(prevRound);
+        
         if (prevRound == null || prevRound.length == 0){
             return -1;
         }

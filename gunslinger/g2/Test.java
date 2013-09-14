@@ -1,4 +1,4 @@
-package gunslinger.g1;
+package gunslinger.g2;
 
 import java.util.*;
 import gunslinger.g1.Player;
