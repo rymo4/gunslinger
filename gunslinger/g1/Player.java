@@ -49,7 +49,7 @@ public class Player extends gunslinger.sim.Player
         this.nplayers = nplayers;
 
         initFeatureVectors(nplayers, enemies, friends);
-        relationship=new Relationship(nplayers);
+        relationship=new Relationship(nplayers,friends,enemies, id);
     }
 
     private void initFeatureVectors(int n, int[] e, int[] f)
@@ -93,7 +93,7 @@ public class Player extends gunslinger.sim.Player
         updateLists(alive);
         updateFeatureVectors(prevRound, alive);
         
-        relationship.update(prevRound);
+        relationship.update(prevRound,alive);
         
         if (prevRound == null || prevRound.length == 0){
             return -1;
