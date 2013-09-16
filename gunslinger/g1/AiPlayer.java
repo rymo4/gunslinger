@@ -37,7 +37,7 @@ public class AiPlayer {
       max_f = f;
 
       attrs  = new int[]{ 0, 0, 0, 0, 0, 0};
-      coeffs = new float[]{ -10f, 2.5f, 9f, 4f, 5f, -2.5f};
+      coeffs = new float[]{ -10f, 2.5f, 9f, 5f, 4f, -2.5f};
 
       enemies = new boolean[n];
       friends = new boolean[n];
