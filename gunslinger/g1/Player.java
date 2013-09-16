@@ -7,7 +7,7 @@ public class Player extends gunslinger.sim.Player
     private static int versions = 0;
     private int playerNumber = versions++;
 
-    public static final String VERSION = "0.1.1";
+    public static final String VERSION = "0.1.2";
 
     // Attributes to use in the feature vector
     private final int NUM_FEATURES = 5;

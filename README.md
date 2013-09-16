@@ -77,3 +77,9 @@ wins about 50% of the games.
 * Features in Vector: "enemy", "friend", "foe" (has shot me), "friend's foe", and "no relationship".
 * Feature vector starts as best guess for definitions of players, updates over time. Player with highest score is shot.
 * Weights picked with common sense. Will use learning techniques to optimize these weights in future.
+
+### v0.1.1
+
+* Add new feature to tell if somebody who shot your friend actually killed them, meaning we should not target this person since there is no point
+* Add initial relationship tracking (not yet in use)
+* Add choice to shoot or not based on being provoked: don't shot unless somebody shoots you or your friend
