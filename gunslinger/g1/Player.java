@@ -99,8 +99,13 @@ public class Player extends gunslinger.sim.Player
         updateFeatureVectors(prevRound, alive);
         //relationship.update(prevRound,alive);
 
-        if (!provoked)
+        if (!provoked){
+            System.out.println("Im calm");        
             return -1;
+        }
+        else {
+            System.out.println("Im ANGRY!!!"); 
+        }
 
         int[] playersScores = new int[nplayers];
         for (int i = 0; i < nplayers; i++){
@@ -138,12 +143,17 @@ public class Player extends gunslinger.sim.Player
             // player i last shot lastShot
             int lastShot = prevRound[i];
             if (lastShot >= 0) {
-                if(i != id)
-                    players[lastShot].attrs[SHOT]++;
+                // If someone shot our friend
                 if (players[id].friends[lastShot])
-                    players[i].attrs[FRIENDS_FOE]++;
+                    // If we done currently identify him as being our friends enemy
+                    if (!players[i].enemies[lastShot])
+                        players[i].attrs[FRIENDS_FOE]++;
+                        players[i].enemies[lastShot] = true;
                 if (lastShot == id)
                     players[i].attrs[FOE]++;
+                if(i != id)
+                    players[i].enemies[lastShot] = true;
+                    players[lastShot].attrs[SHOT]++;
             }
         }
     }
@@ -153,7 +163,19 @@ public class Player extends gunslinger.sim.Player
     {
         for (int i = 0; i < nplayers; i++){
             if (!alive[i]) {
-                this.players[i].dead = true;
+                // if he just died this turn
+                if (!this.players[i].dead) {
+                    this.players[i].dead = true;
+                    // we check to see who their enemies where and update accordingly
+                    for (int j = 0; j < nplayers; j++){
+                        // we check to see if they where a foe of our friends
+                        for (int k = 0; k < friends.length; k++) {
+                            if (this.players[j].enemies[friends[k]]) {
+                                this.players[j].attrs[FRIENDS_FOE]--;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -167,7 +189,7 @@ public class Player extends gunslinger.sim.Player
 
     private boolean validTarget(int player)
     {
-        return player != id || this.players[player].dead;
+        return player != id && !this.players[player].dead;
     }
 
 }
