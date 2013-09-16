@@ -36,8 +36,8 @@ public class AiPlayer {
       max_e = e;
       max_f = f;
 
-      attrs  = new int[]{ 0, 0, 0, 0, 0, 0 };
-      coeffs = new float[]{ -10f, 2.5f, 9f, 4f, 5f, -2.5f };
+      attrs  = new int[]{ 0, 0, 0, 0, 0, 0};
+      coeffs = new float[]{ -10f, 2.5f, 9f, 4f, 5f, -2.5f};
 
       enemies = new boolean[n];
       friends = new boolean[n];
@@ -53,11 +53,4 @@ public class AiPlayer {
       return sum;
   }
 
-  // coeffs
-  private float ENEMY_VAL = 5.0f;
-  private float FRIEND_VAL = -10.0f;
-  private float NONE_VAL = 0.0f;
-  private float FOE_VAL = 9.0f;
-  private float FRIENDS_FOE_VAL = 4.0f;
-  private float PREV_SHOT_VAL = 5.0f;
 }

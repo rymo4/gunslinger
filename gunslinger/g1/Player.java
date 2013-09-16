@@ -7,7 +7,7 @@ public class Player extends gunslinger.sim.Player
     private static int versions = 0;
     private int playerNumber = versions++;
 
-    public static final String VERSION = "0.1.0";
+    public static final String VERSION = "0.1.1";
 
     // Attributes to use in the feature vector
     private final int NUM_FEATURES = 5;
@@ -24,6 +24,8 @@ public class Player extends gunslinger.sim.Player
     private int nplayers;
     private int[] friends;
     private int[] enemies;
+
+    private boolean provoked;
 
     private AiPlayer[] players;
     
@@ -92,12 +94,10 @@ public class Player extends gunslinger.sim.Player
     {
         updateLists(alive);
         updateFeatureVectors(prevRound, alive);
-        
         relationship.update(prevRound,alive);
-        
-        if (prevRound == null || prevRound.length == 0){
+
+        if (!provoked)
             return -1;
-        }
 
         int[] playersScores = new int[nplayers];
         for (int i = 0; i < nplayers; i++){
@@ -120,6 +120,14 @@ public class Player extends gunslinger.sim.Player
     private void updateFeatureVectors(int[] prevRound, boolean[] alive)
     {
         if (prevRound == null) return;
+
+        for (int i = 0; i < friends.length; i++){
+            if (contains(friends[i], prevRound)){
+                provoked = true;
+            }
+        }
+        if (contains(id, prevRound)) provoked = true;
+
         for (int i = 0; i < nplayers; i++){
             players[i].attrs[SHOT] = 0;
         }
@@ -156,7 +164,7 @@ public class Player extends gunslinger.sim.Player
 
     private boolean validTarget(int player)
     {
-        return !this.players[player].me && !this.players[player].dead;
+        return player != id || this.players[player].dead;
     }
 
 }
