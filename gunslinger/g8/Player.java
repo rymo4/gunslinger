@@ -10,9 +10,6 @@ public class Player extends gunslinger.sim.Player
     // my version no
     private int version = versions++;
     
-    // A simple fixed shoot rate strategy used by the dumb player
-    private static double ShootRate = 0.8;
-
     // name of the team
     //
     public String name()
@@ -39,7 +36,7 @@ public class Player extends gunslinger.sim.Player
     	    history[i] = new ArrayList<Integer>();
             timesTargeted[i] = 0;
     	}
-
+	previousTarget = -1;
     }
 
     // Pick a target to shoot
@@ -54,29 +51,46 @@ public class Player extends gunslinger.sim.Player
     {
     	if (prevRound != null) {
       	    for (int i = 0; i < nplayers; i++) {    		
-        	history[i].add(prevRound[i]);
+        	history[i].add(0, prevRound[i]);
                 if (prevRound[i] != -1) {
                     timesTargeted[prevRound[i]]++;
                 }
     	    }
-    	}
-        int[] ranks = new int[nplayers];
+    	} else if (enemies.length * 5 < nplayers || friends.length * 2 > nplayers) {
+	    return -1;
+	}
+	double maxRank = 0;
+	int target = -1;
         for (int i = 0; i != nplayers; ++i) {
-            if (i != id && alive[i] && !Arrays.asList(friends).contains(i)) {
-                ranks[i] = rank(alive, i);
+            if (i != id && alive[i] && !isFriend(i)) {
+		double tempRank = rank(alive, prevRound, i);
+                if (maxRank < tempRank) {
+		    maxRank = tempRank;
+		    target = i;
+		}
+	    }
+	    /*
+	    if (Thread.currentThread().isInterrupted()) {
+		previousTarget = target;
+		return target;
+		} */
+	}    	
+	previousTarget = target;
+        return target;
+    }
+    
+    public List<Integer> shotAtLastRound(int[] prevRound, boolean[] alive) {
+	List<Integer> shotAtLastRound = new ArrayList<Integer>();
+	if (prevRound == null) {
+	    return shotAtLastRound;
+	}
+	for (int i = 0; i < nplayers; i++) {
+	    if (prevRound[i] != -1 && alive[i] && alive[prevRound[i]] && isFriend(i)
+		      && !shotAtLastRound.contains(prevRound[i])) {
+		    shotAtLastRound.add(prevRound[i]);
 	    }
 	}
-        int target = -1;
-    	int maxRank = 0;
-    	for (int i = 0; i < nplayers; i++) {
-    	    if (ranks[i] > maxRank || 
-                target != -1 && ranks[i] == maxRank && 
-                timesTargeted[i] > timesTargeted[target]) {
-        		target = i;
-        		maxRank = ranks[i];
-            }
-    	}
-        return target;
+	return shotAtLastRound;
     }
 
     // Assigns a ranking to a player. Higher ranking means a higher priority to shoot
@@ -85,21 +99,45 @@ public class Player extends gunslinger.sim.Player
     //  target - the id of the person we are trying to assign a ranking to
     // Rerturn:
     // int - the ranking for the target
-    public int rank(boolean[] alive, int target) {
-    	int rank = Arrays.asList(enemies).contains(target) ? 1 : 0;        
+    public double rank(boolean[] alive, int[] prevRound, int target) {
+    	double rank = isEnemy(target) ? 1 : 0;        
     	List<Integer> playerHistory = history[target];
+	List<Integer> shotAtLastRound = shotAtLastRound(prevRound, alive);
+	double roundWeight = 1;
     	for (int otherTarget : playerHistory) {
     	    if (id == otherTarget) {
-    		  rank += 2;
-    	    } else if (Arrays.asList(friends).contains(otherTarget) && alive[otherTarget]) {
-    		  rank++;
-    	    } else if (Arrays.asList(enemies).contains(otherTarget) && alive[otherTarget]) {
-    		  rank--;
+    		  rank += 2 * roundWeight;
+    	    } else if (isFriend(otherTarget) && alive[otherTarget]) {
+		rank += roundWeight;
+    	    } else if (isEnemy(otherTarget) && alive[otherTarget]) {
+		rank -= roundWeight;
     	    }
+	    roundWeight *= 0.9;
     	}
+	if (shotAtLastRound.contains(target) &&
+	    ((isNeutral(target) && enemies.length < friends.length + 1) || isEnemy(target))) {
+	    rank += 1.5;
+	}
+	if (target == previousTarget && alive[previousTarget]) {
+	    rank++;
+	}
     	return rank;
     }
 
+    public boolean isEnemy(int id) {
+	return Arrays.asList(enemies).contains(id);
+    }
+
+    public boolean isFriend(int id) {
+	return Arrays.asList(friends).contains(id);
+    }
+
+    public boolean isNeutral(int id) {
+	return !isEnemy(id) && !isFriend(id);
+    }
+
+    // player we last shot at
+    private int previousTarget;
     // number of players in the game
     private int nplayers;
     // list of ids that correspond to friends

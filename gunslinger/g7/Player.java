@@ -1,3 +1,4 @@
+//Deliverable2 9/15
 package gunslinger.g7;
 
 import java.util.*;
@@ -7,54 +8,52 @@ import java.util.*;
 //
 public class Player extends gunslinger.sim.Player
 {
-	
-	private int nplayers;
-    private int[] friends;
-    private int[] enemies;
-	private int[] priority;
-	private int[] timesshot;
-	// total versions of the same player
+    // total versions of the same player
     private static int versions = 0;
     // my version no
     private int version = versions++;
-	
-	private boolean roundone,once=false;
     
-    // A simple fixed shoot rate strategy used by the dumb player
-    //private static double ShootRate = 0.8;
-	
     // name of the team
     //
     public String name()
     {
-        return "Player g7" + (versions > 1 ? " v" + version : "");
+        return "g7" + (versions > 1 ? " v" + version : "");
     }
-	
-		
+ 
     // Initialize the player
     //
     public void init(int nplayers, int[] friends, int enemies[])
     {
-        // Note:
-        //  Seed your random generator carefully
-        //  if you want to repeat the same random number sequence
-        //  pick your favourate seed number as the seed
-        //  Or you can simply use the clock time as your seed     
-        //       
-		//  gen = new Random(System.currentTimeMillis());
-        // long seed = 12345;
-        // gen = new Random(seed);
-		
+        friendWeight=1.0;
+        weightD=0.7;
+        weightT=0.7;
+        threatWeight=0.3;
+        dyingWeight=0.2;
+        enemyWeight=0.4;
+        
         this.nplayers = nplayers;
         this.friends = friends.clone();
         this.enemies = enemies.clone();
-		roundone=true;
-		once=true;
-		
-				
+        playerArr = new PlayerStats[nplayers];
+        for(int i=0;i<nplayers;i++)
+        	playerArr[i] = new PlayerStats();
+        
+        for(int j=0;j<friends.length;j++)
+            playerArr[friends[j]].setFriend(true);
+        
+        for(int j=0;j<enemies.length;j++)
+            playerArr[enemies[j]].setEnemy(true);
+        
+        for(int i=0;i<nplayers;i++)
+        	if(!playerArr[i].getFriend() && !playerArr[i].getEnemy())
+        	   playerArr[i].setNeutral(true);
+        
+        priorityShoot = new double[nplayers];
+        round=1;
+        
+        //printRelationships();
     }
-	
-	
+
     // Pick a target to shoot
     // Parameters:
     //  prevRound - an array of previous shoots, prevRound[i] is the player that player i shot
@@ -65,197 +64,192 @@ public class Player extends gunslinger.sim.Player
     //
     public int shoot(int[] prevRound, boolean[] alive)
     {
-		/* Strategy used by the dumb player:
-		 Decide whether to shoot or not with a fixed shoot rate
-		 If decided to shoot, randomly pick one alive that is not your friend */
-		
+        /* Strategy used by the dumb player:
+           Decide whether to shoot or not with a fixed shoot rate
+           If decided to shoot, randomly pick one alive that is not your friend */
+                
         // Shoot or not in this round?
-		if(once)
-		{
-			priority=new int[nplayers];
-			timesshot=new int[nplayers];
-			roundone=true;
-			for(int i=0;i<nplayers;i++)
-			{
-				for(int j=0;j<friends.length;j++)
-				   if(friends[j]==i)
-					  priority[i]=0;
-				for(int j=0;j<enemies.length;j++)
-					if(enemies[j]==i)
-						priority[i]=2;
-				else { 
-					priority[i]=1;
-					
-				}
-			}
-			
-			priority[id]=0;
-			
-			for(int i=0;i<nplayers;i++)
-				timesshot[i]=0;
-			
-			once=false;
-			
-		}
-		
-		int target=-1;
-		
-				
-		
-		//Update priority[] and timesshot[]..who is dead and alive?
-		
-		//System.out.println(priority.length);
-		for(int i=0;i<nplayers;i++)
-			if(!alive[i])
-			{
-				
-				priority[i]=-1;
-				timesshot[i]=-1;
-			}
-		
-		if(roundone)
-		{
-			Random r=new Random();
-			int R = r.nextInt(3-1) + 1;
-			if(R==1)
-				target=-1;
-			
-		    else 
-			{
-				//Pick an enemy at random to shoot
-				boolean stop=false;
-				do
-				{
-					int enemy_to_kill_index=new Random().nextInt(enemies.length);
-					if(enemy_to_kill_index != id && alive[enemy_to_kill_index])
-					{
-						target=enemy_to_kill_index;
-						stop=true;
-					}
-					
-				}
-				while(stop!=true);
-			}
-			
-			roundone=false;
-		}
-		
-		else{
-			/*boolean shoot = gen.nextDouble() < ShootRate;
-			 
-			 if (!shoot)
-			 return -1;
-			 
-			 ArrayList<Integer> targets = new ArrayList<Integer>();
-			 for (int i = 0; i != nplayers; ++i)
-			 if (i != id && alive[i] && !Arrays.asList(friends).contains(i))
-			 targets.add(i);
-			 
-			 //int target = targets.get(gen.nextInt(targets.size()));*/
-			
-			for(int i=0;i<nplayers;i++)
-				if(prevRound[i]!=-1 && timesshot[prevRound[i]]!=-1)
-					timesshot[prevRound[i]]++;
-			
-			
-			
-			for(int i=0;i<nplayers;i++)
-			{
-				if(prevRound[i]==id)
-					priority[i]+=2;
-				if(Arrays.asList(friends).contains(prevRound[i]))
-				    priority[i]+=1;
-				if(Arrays.asList(enemies).contains(prevRound[i]))
-				    priority[i]-=1;
-			}
-			
-			int get_prev_shot=prevRound[id];
-			if(get_prev_shot!=-1 && alive[get_prev_shot])
-				priority[get_prev_shot]+=1;
-			
-			
-			
-			
-			int max=0;
-			
-			for(int i=0;i<nplayers;i++)
-			{
-				//max=0;
-				if(priority[i]>max && i!=id)
-					max=i;
-				
-			}
-			
-			target=max;
-			
-			
-			int count=0;
-			for(int i=0;i<nplayers;i++)
-				if(priority[i]==priority[max] && alive[i] && i!=id)
-					count++;
-			
-			if(count==1)
-				target=max;
-			else if(count > 1){
-				
-				int same_priority[]=new int[count];
-				
-				//Choosing the players with the same max priority
-				for(int i=0,j=0;i<nplayers;i++)
-					if(priority[i]==priority[max] && alive[i] && i!=id)
-					{
-						same_priority[j]=i;
-						j++;
-					}
-				
-				
-					int t = 0 + (int)(Math.random() * ((count - 0)));
-					//System.out.println("cnt: " + count + " t: " + t);
-				    target = same_priority[t];	
-			}
-			
-			/* //To resolve ambiguity of same priority. Calculate based on number of times person was shot.
-			int count=0;
-			for(int i=0;i<nplayers;i++)
-				if(priority[i]==priority[max])
-				   count++;
-				 				
-			if(count==1)
-			   target=max;
-			else if(count > 1){
-				
-				int same_priority[]=new int[count];
-				for(int i=0,j=0;i<nplayers;i++)
-					if(priority[i]==priority[max])
-					{
-						same_priority[j]=i;
-						j++;
-					}
-				
-				int max1=-1;
-				
-				for(int i=0;i<count;i++)
-				{
-					//max=0;
-					if(timesshot[i]>max1 && i!=id && alive[i]) {
-						max1=i;
-						//System.out.println("Hi");
-					}
-					
-				}
-				
-				if(max1 == -1)
-					target = max;
-				else
-					target=max1;
-						
-			}
-			 */
-			
-		}
-		return target;
-	}
-	
-	    //private Random gen;
+    	int target=-1;
+        boolean shoot=true;
+    	if(round==1)
+    	{
+    		double ratio= (double)(nplayers-enemies.length-friends.length-1)/enemies.length;
+    		//System.out.println("RATIO: " + ratio);
+    		if (ratio>0.4)
+    			shoot=false;
+    		if (shoot)
+    			target=enemies[0];
+    		round++;
+    		return target;
+    	}
+    	else
+    	{
+    		for(int i=0;i<nplayers;i++)
+    			if(!alive[i])
+    			   playerArr[i].died();
+    		
+    		friendWeight = (double) enemies.length/enemiesAlive();
+    		//System.out.println(friendWeight);
+    		
+    		//Check if friend was shot here.
+    		checkShotFriend(prevRound);
+    		
+    		//Ranking Formula to determine which player to shoot
+    		double tempVar;
+    		for (int i=0;i<nplayers;i++) 
+    		{
+    			//Probability that player dies
+    			tempVar=playerArr[i].getProbDie();
+    				
+    			if (ArrayContains(prevRound, i)) 
+    			{
+    				tempVar=tempVar*(1-weightD)+weightD;
+    				//System.out.println(i + " was Shot");
+    			}
+    			else
+    				tempVar=tempVar*(1-weightD);
+    			playerArr[i].setProbDie(tempVar);
+
+    			//Probability that player is a threat to us
+    			tempVar=playerArr[i].getProbThreat();
+    			if (prevRound[i]==id)
+    				tempVar=tempVar*(1-weightT)+weightT;
+    			else
+    				tempVar=tempVar*(1-weightT);
+    			playerArr[i].setProbThreat(tempVar);
+    		
+    			//Don't shoot friends or players that are already dead
+    			if (playerArr[i].getFriend() || !playerArr[i].getAlive())
+    				priorityShoot[i]=0;
+    			else 
+    			{
+    				//Determine priority of enemies or neutrals based on values calculated above
+    				tempVar=threatWeight*playerArr[i].getProbThreat()+dyingWeight*playerArr[i].getProbDie();
+    				if (playerArr[i].getEnemy())
+    					tempVar=tempVar+enemyWeight;
+    				
+    				//How often our friends were shot by another player
+    				tempVar=tempVar+friendWeight*(playerArr[i].getNumShotFriends()/round);
+    				priorityShoot[i]=tempVar;
+    			}
+    		}
+    		
+    		//Shoot the player with the highest priority
+    		int to_shoot=getMaxIndex(priorityShoot);
+    		if(to_shoot>0 && to_shoot!=id)
+    			target=to_shoot;
+    	
+	    	/*
+	    	System.out.print("[");
+	    	for(int i=0; i < priorityShoot.length; i++) {
+	    		System.out.print(i + ":" + priorityShoot[i] + " ");
+	    	}
+	    	System.out.println("]");
+	    	*/
+    	
+	    	round++;	
+	    	return target;				
+    	}
+    }
     
+    //Get the maximum index within an array
+    public int getMaxIndex(double a[])
+    {
+    	double max=0;
+    	int maxindex = 0;
+    	for(int i=0;i<a.length;i++)
+    		if(a[i]>max)
+    		{
+    			max=a[i];
+    			maxindex=i;
+    		}
+    	return maxindex;
+    }
+    
+    //Check if a friend was shot in the previous round
+    public void checkShotFriend(int prev[]) 
+    {
+    	//System.out.println("CheckShotFriends");
+    	for(int i=0; i < prev.length; i++) 
+    	{
+    		for(int j=0; j < friends.length; j++) 
+    		{
+    			if(prev[i] == friends[j]) 
+    			{
+    				playerArr[i].shotFriend();
+    				//System.out.println("Player" + i + " shot friend " + prev[i]);
+    			}
+    			
+    		}
+    		/*
+    		if(Arrays.asList(friends).contains(prev[i])) {
+    			playerArr[i].shotFriend();
+    			System.out.println("Player" + i + " shot friend " + prev[i]);
+    		}
+    		*/
+    	}
+    }
+    
+    public void printRelationships() {
+    	System.out.println("Enemies: [");
+    	for(int i=0; i < enemies.length; i++) 
+    		System.out.print(enemies[i] + " ");
+    	System.out.print("]");
+    	System.out.println();
+    	
+    	System.out.println("Friends: [");
+    	for(int i=0; i < friends.length; i++)
+    		System.out.print(friends[i] + " ");
+    	System.out.print("]");
+    	System.out.println();
+    	
+    }
+    
+    //Check if an array contains value i
+    public boolean ArrayContains(int arr[], int i) 
+    {
+    	for(int j=0; j < arr.length; j++) 
+    	{
+    		if(arr[j] == i)
+    			return true;
+    	}
+    	
+    	return false;
+    }
+    
+    //Count how many enemies are still alive
+    public double enemiesAlive() 
+    {
+    	double x = 0;
+    
+    	for(int i=0; i < playerArr.length; i++) 
+    	{
+    		if(playerArr[i].getEnemy() && playerArr[i].getAlive()) 
+    		{
+    			x++;
+    			//System.out.println("enemy alive");
+    		}
+    	}
+    	
+    	//Handles divide by 0 case
+    	if(x == 0)
+    		x = 0.6;
+    	//System.out.println("enemiesAlive: " + x);
+    	return x;
+    }
+    
+    private int nplayers;
+    private int[] friends;
+    private int[] enemies;
+    private double[] priorityShoot;
+    private PlayerStats playerArr[];
+    
+    private double friendWeight;
+    private double weightD;
+    private double weightT;
+    private double threatWeight;
+    private double dyingWeight;
+    private double enemyWeight;
+    
+    private int round;
 }
