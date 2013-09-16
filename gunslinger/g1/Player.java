@@ -53,7 +53,7 @@ public class Player extends gunslinger.sim.Player
         this.friends = friends.clone();
 
         initFeatureVectors(nplayers, enemies, friends);
-        relationship=new Relationship(nplayers,friends,enemies, id);
+        relationship = new Relationship(nplayers,friends,enemies, id);
     }
 
     private void initFeatureVectors(int n, int[] e, int[] f)
@@ -94,17 +94,12 @@ public class Player extends gunslinger.sim.Player
     //
     public int shoot(int[] prevRound, boolean[] alive)
     {
-        System.out.println(Arrays.toString(prevRound));
         updateLists(alive);
         updateFeatureVectors(prevRound, alive);
         //relationship.update(prevRound,alive);
 
         if (!provoked){
-            System.out.println("Im calm");        
             return -1;
-        }
-        else {
-            System.out.println("Im ANGRY!!!"); 
         }
 
         int[] playersScores = new int[nplayers];
