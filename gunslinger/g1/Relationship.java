@@ -16,7 +16,7 @@ public class Relationship {
 		fixed=new boolean[n][n];
 		friend=new double[n][n];
 		neutral=new double[n][n];
-		history=new int[10][n];
+		history=new int[20][n];
 		me=id;
 		e=enemies.length;
 		f=friends.length;
@@ -24,8 +24,8 @@ public class Relationship {
 		for (int i = 0; i < n; i++) {
 			for(int j=0;j<n;j++)
 				if (i!=j){
-					friend[i][j]=f/(n-1);
-					neutral[i][j]=(n-1-e-f)/(n-1);
+					friend[i][j]=((double)f)/(n-1);
+					neutral[i][j]=((double)n-1-e-f)/(n-1);
 				}
 		}
 		
@@ -58,7 +58,8 @@ public class Relationship {
 	}
 	double enemy_constant1=0.3;
 	double enemy_constant2=0.5;
-	double friend_constant=0.7;
+	double friend_constant=0.9;
+	
 	public void update(int[] prevRound,boolean[] alive) {
 		if (prevRound == null || prevRound.length == 0){
             return;
@@ -83,19 +84,24 @@ public class Relationship {
 			}
 		}
 		//friend inference
+		if(round>0)
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
-				if(history[round-1][i]==prevRound[j]){
-					if (!fixed[i][j]){
-						friend[i][j]=1-(pE(i,j)+pN(i,j))*friend_constant;
-						neutral[i][j]*=friend_constant;
+				if (i!=j) 
+					if(history[round-1][i]==prevRound[j]){
+						if (!fixed[i][j]){
+							friend[i][j]=1-(pE(i,j)+pN(i,j))*friend_constant;
+							neutral[i][j]*=friend_constant;
+						}
+						if (!fixed[j][i]){
+							friend[j][i]=1-(pE(j,i)+pN(j,i))*friend_constant;
+							neutral[j][i]*=friend_constant;
+						}
 					}
-					if (!fixed[j][i]){
-						friend[j][i]=1-(pE(j,i)+pN(j,i))*friend_constant;
-						neutral[j][i]*=friend_constant;
-					}
-				}
 			}
+		}
+		if (round>5){
+			System.out.println();
 		}
 		//dead inference
 		//TODO

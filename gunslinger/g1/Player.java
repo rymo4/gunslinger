@@ -96,7 +96,7 @@ public class Player extends gunslinger.sim.Player
     {
         updateLists(alive);
         updateFeatureVectors(prevRound, alive);
-        //relationship.update(prevRound,alive);
+        relationship.update(prevRound,alive);
 
         if (!provoked){
             return -1;
