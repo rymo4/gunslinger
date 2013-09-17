@@ -120,9 +120,25 @@ public class Relationship {
 	}
 	
 	
-
+	//return 0--neutral  1--friend  2--enemy
 	public int[][] sample(){
 		int[][] a=new int[n][n];
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < n; j++) 
+			if(i!=j){
+				double t=rand.nextDouble();
+				if(t<pN(i, j)){ 
+					a[i][j]=0;
+				}
+				else if (t<pN(i, j)+pF(i, j)) {
+					a[i][j]=1;
+				}
+				else {
+					a[i][j]=2;
+				}
+			}
+			
+		}
 		return a;
 	}
 
