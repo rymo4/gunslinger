@@ -1,4 +1,4 @@
-package gunslinger.g1;
+package gunslinger.g1sub;
 import java.util.*;
 
 /*
@@ -19,7 +19,6 @@ public class AiPlayer {
   public int FRIENDS_FOE  = 3;
   public int ENEMY        = 4;
   public int NONE         = 5;
-  public int RETALIATION  = 6;
 
   public int max_e;
   public int max_f;
@@ -37,8 +36,8 @@ public class AiPlayer {
       max_e = e;
       max_f = f;
 
-      attrs  = new int[]{ 0, 0, 0, 0, 0, 0, 0};
-      coeffs = new float[]{ -10f, 2.0f, 6f, 4f, 3f, -2.6f, 3.0f};
+      attrs  = new int[]{ 0, 0, 0, 0, 0, 0};
+      coeffs = new float[]{ -10f, 2.5f, 9f, 5f, 4f, -2.5f};
 
       enemies = new boolean[n];
       friends = new boolean[n];

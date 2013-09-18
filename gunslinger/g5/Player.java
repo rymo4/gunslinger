@@ -9,10 +9,14 @@ import java.util.*;
  * @author Priyanka Singh
  * @author Neha Aggarwal
  * 
- * TODO: Perhaps figure out a way to hang back and not shoot as much.
+ * TODO: Use rudimentary prediction to break ties. Consider who may help the target retaliate.
+ * TODO: Decide whether or not to be even MORE of a pacifist.
+ * TODO: Do we actually never want to shoot round 1?
+ * TODO: Don't shoot until ourselves/a friend is shot?
+ * TODO: Compartmentalizaion. Weight manager class and static constants for weight values.
  */
 public class Player extends gunslinger.sim.Player {
-	
+
 	// total versions of the same player
 	private static int versions = 0;
 	// my version no
@@ -28,12 +32,12 @@ public class Player extends gunslinger.sim.Player {
 	private int[] weights;
 	private int numNeutrals;
 
-	
+
 	private int[] prevRound;
 	private boolean[] alive;
-	private ArrayList<int[]> history;
+	private GameHistory history;
 
-	
+
 	/**
 	 * Returns the player/team name.
 	 */
@@ -41,7 +45,7 @@ public class Player extends gunslinger.sim.Player {
 		return "g5" + (versions > 1 ? " v" + version : "");
 	}
 
-	
+
 	/**
 	 * Initializes the player.
 	 * @param nplayers the number of players in the game
@@ -56,7 +60,7 @@ public class Player extends gunslinger.sim.Player {
 		// gen = new Random(seed);
 
 		this.nplayers = nplayers;
-		
+
 		// creating the weight array
 		this.weights = new int[nplayers];
 
@@ -79,7 +83,7 @@ public class Player extends gunslinger.sim.Player {
 		System.out.println("g5 ENEMIES: " + this.enemies);
 
 		// initialize the game history
-		history = new ArrayList<int[]>();
+		history = new GameHistory();
 
 	}
 
@@ -96,14 +100,14 @@ public class Player extends gunslinger.sim.Player {
 		this.prevRound = prevRound;
 		this.alive = alive;
 
-		// If it is the first round, just target a random enemy, assuming one exists
+		// Don't shoot first round
 		// perhaps a smarter choice can be made based on number of friends/enemies as to who our friends might target
 		if (prevRound == null) {
-			if (enemies.size() > 0) {
-				return enemies.get(gen.nextInt(enemies.size()));
-			}
 			return -1;
 		}
+
+
+
 
 		// Add the previous round information to the game history
 		history.add(prevRound);
@@ -117,34 +121,37 @@ public class Player extends gunslinger.sim.Player {
 		// begin computing weights
 		Arrays.fill(weights, 0);
 		weightNonFriends();
-		weightShotPlayer();
+		weightShotMe();
 		weightShotByOthers();
 		weightShotFriends();
 
 		// select a random target from those with highest weights
 		int[] targets = maxIndex(weights);
+		
+		// this constraint works well when there is only one enemy
+		if (weights[targets[0]] == 5) {
+			return -1;
+		}
+		
 		int target = targets[gen.nextInt(targets.length)];
 
 		// print all relevant round info
 		System.out.println("g5 ID: " + id);
-		printHistory();
+		System.out.println(history);
 		System.out.println("g5 ENEMIES ALIVE: " + numEnemiesAlive());
 		System.out.println("g5 FRIENDS ALIVE: " + numFriendsAlive());
 		System.out.println("g5 WEIGHTS: " + Arrays.toString(weights));
 		System.out.println("g5 TARGET: " + target);
 
-		// ideally, target should not be alive or by ourselves
-		if (alive[target] && target != id) {
-			return target;
-		}
-		// still need to decide if there are cases other than above in which it would be wise to not shoot
-		else {
+		// if weights are all zero, don't shoot
+		if (weights[target] == 0) {
 			return -1;
 		}
+		return target;
 
 	}
 
-	
+
 	/**
 	 * Determines if the only players left alive are our friends.
 	 * @return true if only friends remain, false otherwise
@@ -157,8 +164,8 @@ public class Player extends gunslinger.sim.Player {
 		}
 		return true;
 	}
-	
-	
+
+
 	/**
 	 * Computes the number of enemies still alive.
 	 * @return the number of enemies alive
@@ -173,7 +180,7 @@ public class Player extends gunslinger.sim.Player {
 		return amount;
 	}
 
-	
+
 	/**
 	 * Computes the number of friends still alive.
 	 * @return the number of friends alive
@@ -188,18 +195,7 @@ public class Player extends gunslinger.sim.Player {
 		return amount;
 	}
 
-	
-	/**
-	 * Prints the entire round history of the game in a readable format.
-	 */
-	private void printHistory() {
-		System.out.println("g5 HISTORY:");
-		for (int i = 0; i < history.size(); i++) {
-			System.out.println(Arrays.toString(history.get(i)));
-		}
-	}
 
-	
 	/**
 	 * Adds weight to players who are not friends, with additional weight to enemies.
 	 */
@@ -208,7 +204,7 @@ public class Player extends gunslinger.sim.Player {
 		for (int i = 0; i < nplayers; i++) {
 			if (alive[i]) {
 				if (!friends.contains(i) && i != id) {
-					weights[i] += 5;
+					//weights[i] += 5; // weight for just being a neutral
 					// extra weight for enemies
 					if (enemies.contains(i)) {
 						weights[i] += 5;
@@ -218,27 +214,33 @@ public class Player extends gunslinger.sim.Player {
 		}
 	}
 
-	
+
 	/**
 	 * Adds weight to those who have shot our player, with additional weight to enemies.
 	 */
-	private void weightShotPlayer() {
-		// one weight for enemies who have ever shot us
-		// half weight for neutrals who have ever shot us
-		for (int i = 0; i < nplayers; i++) {
-			boolean[] weightAdded = new boolean[nplayers];
-			if (alive[i]) {
-				for (int j = 0; j < history.size(); j++) {
-					if (history.get(j)[i] == id && !weightAdded[i]) {
-						if (enemies.contains(i)) {
-							weights[i] += 10;
+	private void weightShotMe() {
+		// give weight to any enemies who ever shot us
+		// give weight to neutrals who have shot us more than once in a row
+		int[] shooters = history.everShot(id);
+		if (shooters != null) {
+			for (int i = 0; i < shooters.length; i++) {
+				if (alive[shooters[i]]) {
+					if (enemies.contains(shooters[i])) {
+						weights[shooters[i]] += 5;
+					}
+					int numConsShots = history.consecutiveShots(shooters[i], id);
+					if (numConsShots > 0) {
+						if (enemies.contains(shooters[i])) {
+							weights[shooters[i]] += 5 * numConsShots;
 						}
-						else {
-							if (!friends.contains(i)) {
-								weights[i] += 5;
+						else if (!friends.contains(shooters[i])) {
+							if (numConsShots > 1) {
+								weights[shooters[i]] += 5 * numConsShots;
+							}
+							else {
+								weights[shooters[i]] += 2 * numConsShots;
 							}
 						}
-						//weightAdded[i] = true;
 					}
 				}
 			}
@@ -250,40 +252,22 @@ public class Player extends gunslinger.sim.Player {
 	 * Adds weight to those who have been shot by other players, with additional weight to enemies.
 	 */
 	private void weightShotByOthers() {
-		// loop through each player
-		for (int i = 0; i < nplayers; i++) {
-			boolean[] weightAdded = new boolean[nplayers];
-			// if the player is alive...
-			if (alive[i]) {
-				// ...check that player's history
-				for (int j = 0; j < history.size(); j++) {
-					// determine if anyone has ever tried to shoot the player
-					int shooter = findShooter(i, history.get(j));
-					if (shooter > -1 && alive[i] && !weightAdded[i]) {
-						// if the player is an enemy, add weight to said enemy
-						if (enemies.contains(i)) {
-							weights[i] += 5;
-							// if the shooter was a friend, add even more weight to the enemy
-							if (friends.contains(shooter)) {
-								weights[i] += 5;
+		for (int victim = 0; victim < nplayers; victim++) {
+			if (alive[victim]) {
+				int[] shooters = history.everShot(victim);
+				if (shooters != null) {
+					for (int shooter = 0; shooter < shooters.length; shooter++) {
+						if (alive[shooters[shooter]]) {
+							// enemy shooting enemy or neutral; target shooter
+							if (enemies.contains(shooters[shooter]) && !friends.contains(victim)) {
+								weights[shooters[shooter]] += 5;
 							}
-						}
-						// if the player was not an enemy, only add weight if the player has tried to kill us
-						else {
-							// at this point only neutrals who have tried to kill us can have weights greater than 5
-							if (weights[i] > 5) {
-								// if there are enemies alive, give neutral less weight
-								if (numEnemiesAlive() > 0) {
-									weights[i] += 2;
-								}
-								// if there are no enemies left, give neutral more weight
-								else {
-									weights[i] += 5;
-								}
+							// friend or neutral shooting enemy; target victim
+							else if (!enemies.contains(shooter) && enemies.contains(victim)) {
+								weights[victim] += 3;
 							}
+							
 						}
-						// make sure weight isn't compounded
-						weightAdded[i] = true;
 					}
 				}
 			}
@@ -295,48 +279,37 @@ public class Player extends gunslinger.sim.Player {
 	 * Adds weight to players who have attacked our friends, with additional weight to enemies.
 	 */
 	private void weightShotFriends() {
-		// check through each friend's history
 		for (int i = 0; i < friends.size(); i++) {
-			for (int j = 0; j < history.size(); j++) {
-				// determine if anyone ever tried to shoot the friend
-				int shooter = findShooter(friends.get(i), history.get(j));
-				// if both friend and shooter are still alive, assign weight
-				if (shooter > -1 && alive[shooter] && alive[friends.get(i)]) {
-					// if the shooter is an enemy, add more weight
-					if (enemies.contains(shooter)) {
-						weights[shooter] += 8;
-					}
-					// else if the shooter is a neutral, add less weight
-					else if (!friends.contains(shooter)) {
-						weights[shooter] += 4;
+			if (alive[friends.get(i)]) {
+				int[] shooters = history.everShot(friends.get(i));
+				if (shooters != null) {
+					for (int shooter = 0; shooter < shooters.length; shooter++) {
+						if (alive[shooters[shooter]]) {
+							if (enemies.contains(shooters[shooter])) {
+								weights[shooters[shooter]] += 3;
+							}
+							int numConsShots = history.consecutiveShots(shooters[shooter], friends.get(i));
+							if (numConsShots > 0) {
+								if (enemies.contains(shooters[shooter])) {
+									weights[shooters[shooter]] += 3 * numConsShots;
+								}
+								else if (!friends.contains(shooter)) {
+									if (numConsShots > 1) {
+										weights[shooters[shooter]] += 3 * numConsShots;
+									}
+									else {
+										weights[shooters[shooter]] += 1 * numConsShots;
+									}
+								}
+							}
+						}
 					}
 				}
 			}
 		}
 	}
 
-	
-	/**
-	 * Determines if a certain player has been shot in a given round.
-	 * @param playerId the ID of the victim player
-	 * @param roundInfo the shooting info for a round
-	 * @return the ID of the shooter. If there is more than one shooter, chooses randomly. If no shooters, returns -1.
-	 */
-	private int findShooter(int playerId, int[] roundInfo) {
-		ArrayList<Integer> candidates = new ArrayList<Integer>();
-		for (int i = 0; i < roundInfo.length; i++) {
-			if (roundInfo[i] == playerId) {
-				candidates.add(i);
-			}
-		}
-		if (!candidates.isEmpty()) {
-			// THIS IS RANDOM, CAN BE IMPROVED
-			return candidates.get(gen.nextInt(candidates.size())).intValue();
-		}
-		return -1;
-	}
 
-	
 	/**
 	 * Given an int array, returns an array of all indices which contain the max value.
 	 * Used in the game for determining which players have the highest weights after evaluation.

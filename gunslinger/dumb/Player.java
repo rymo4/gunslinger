@@ -37,14 +37,19 @@ public class Player extends gunslinger.sim.Player
         // gen = new Random(seed);
 
         this.nplayers = nplayers;
-        this.friends = friends.clone();
-        this.enemies = enemies.clone();
+
+        for (int i = 0; i != friends.length; i++)
+            this.friends.add(friends[i]);
+
+        for (int i = 0; i != enemies.length; i++)
+            this.enemies.add(enemies[i]);
     }
 
     // Pick a target to shoot
     // Parameters:
     //  prevRound - an array of previous shoots, prevRound[i] is the player that player i shot
     //              -1 if player i did not shoot
+    //              In the first round, prevRound = null
     //  alive - an array of player's status, true if the player is still alive in this round
     // Return:
     //  int - the player id to shoot, return -1 if do not shoot anyone
@@ -63,16 +68,20 @@ public class Player extends gunslinger.sim.Player
 
         ArrayList<Integer> targets = new ArrayList<Integer>();
         for (int i = 0; i != nplayers; ++i)
-            if (i != id && alive[i] && !Arrays.asList(friends).contains(i))
+            if (i != id && alive[i] && !friends.contains(i))
                 targets.add(i);
 
+        if (targets.size() == 0)
+            return -1;
+        
         int target = targets.get(gen.nextInt(targets.size()));
+
         return target;
     }
 
 
     private Random gen;
     private int nplayers;
-    private int[] friends;
-    private int[] enemies;
+    private ArrayList<Integer> friends = new ArrayList<Integer>();
+    private ArrayList<Integer> enemies = new ArrayList<Integer>();
 }

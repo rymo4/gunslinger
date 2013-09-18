@@ -6,15 +6,18 @@ package gunslinger.sim;
 //
 public abstract class Player
 {
-    private static int globalId = 0;
-    
-    // id of player
-    public final int id;
-    
+    // player's index in the playerlist file
+    static int globalIndex = 0;    
+    final int index;
+
+    // player's id in each game
+    // the id is assigned randomly when each game starts
+    protected int id;
+
     // constructor for base class
     public Player()
     {
-        id = globalId++;
+        index = globalIndex++;
     }
 
     // name of group

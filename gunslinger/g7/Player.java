@@ -1,4 +1,4 @@
-//Deliverable2 9/15
+//Deliverable3 9/17
 package gunslinger.g7;
 
 import java.util.*;
@@ -26,6 +26,7 @@ public class Player extends gunslinger.sim.Player
     {
         friendWeight=1.0;
         weightD=0.7;
+        weightD2=0.3;
         weightT=0.7;
         threatWeight=0.3;
         dyingWeight=0.2;
@@ -36,7 +37,7 @@ public class Player extends gunslinger.sim.Player
         this.enemies = enemies.clone();
         playerArr = new PlayerStats[nplayers];
         for(int i=0;i<nplayers;i++)
-        	playerArr[i] = new PlayerStats();
+        	playerArr[i] = new PlayerStats(nplayers);
         
         for(int j=0;j<friends.length;j++)
             playerArr[friends[j]].setFriend(true);
@@ -92,7 +93,8 @@ public class Player extends gunslinger.sim.Player
     		//System.out.println(friendWeight);
     		
     		//Check if friend was shot here.
-    		checkShotFriend(prevRound);
+    		updateShootHistory(prevRound);
+    		//checkShotFriend(prevRound);
     		
     		//Ranking Formula to determine which player to shoot
     		double tempVar;
@@ -100,15 +102,30 @@ public class Player extends gunslinger.sim.Player
     		{
     			//Probability that player dies
     			tempVar=playerArr[i].getProbDie();
-    				
-    			if (ArrayContains(prevRound, i)) 
+    			// did player shoot somebody in the prev round but didn't kill | retaliation	
+    			if (prevRound[i]>0) 
     			{
-    				tempVar=tempVar*(1-weightD)+weightD;
+    				if (alive[prevRound[i]])
+    					tempVar=tempVar*(1-weightD)+weightD;
     				//System.out.println(i + " was Shot");
     			}
     			else
     				tempVar=tempVar*(1-weightD);
-    			playerArr[i].setProbDie(tempVar);
+    			//playerArr[i].setProbDie(tempVar);
+    			
+    			// was this player shot by somebody in prevRound | consistency
+    			for (int j=0; j<prevRound.length; j++)
+    			{
+    				if (prevRound[j]==i)
+    				{
+    					if (alive[j])
+    					{
+    						tempVar+=weightD2;
+    					}
+    						
+    				}
+    			}
+    			playerArr[i].setProbDie(tempVar/2);
 
     			//Probability that player is a threat to us
     			tempVar=playerArr[i].getProbThreat();
@@ -128,8 +145,12 @@ public class Player extends gunslinger.sim.Player
     				if (playerArr[i].getEnemy())
     					tempVar=tempVar+enemyWeight;
     				
-    				//How often our friends were shot by another player
-    				tempVar=tempVar+friendWeight*(playerArr[i].getNumShotFriends()/round);
+    				//Did player shoot our friend in prevRound but didnt manage to kill
+    				if (playerArr[i].getShotAliveFriend(friends, prevRound[i], alive))
+    				{
+    					tempVar=tempVar+friendWeight;
+    				}
+    				//tempVar=tempVar+friendWeight*(playerArr[i].getNumShotFriends(friends)/round);
     				priorityShoot[i]=tempVar;
     			}
     		}
@@ -138,7 +159,9 @@ public class Player extends gunslinger.sim.Player
     		int to_shoot=getMaxIndex(priorityShoot);
     		if(to_shoot>0 && to_shoot!=id)
     			target=to_shoot;
-    	
+    		if (target!=-1 && playerArr[target].getNumShotFriends(friends)<1 && !playerArr[target].shotUs(id) && !playerArr[target].getEnemy())
+    			target=-1;
+    			
 	    	/*
 	    	System.out.print("[");
 	    	for(int i=0; i < priorityShoot.length; i++) {
@@ -166,6 +189,14 @@ public class Player extends gunslinger.sim.Player
     	return maxindex;
     }
     
+    public void updateShootHistory(int p[])
+    {
+    	for(int i=0; i < p.length; i++)
+    	{
+    		playerArr[i].shotPlayer(p[i]);
+    	}
+    }
+    
     //Check if a friend was shot in the previous round
     public void checkShotFriend(int prev[]) 
     {
@@ -176,7 +207,7 @@ public class Player extends gunslinger.sim.Player
     		{
     			if(prev[i] == friends[j]) 
     			{
-    				playerArr[i].shotFriend();
+    				playerArr[i].shotPlayer(friends[j]);
     				//System.out.println("Player" + i + " shot friend " + prev[i]);
     			}
     			
@@ -246,6 +277,7 @@ public class Player extends gunslinger.sim.Player
     
     private double friendWeight;
     private double weightD;
+    private double weightD2;
     private double weightT;
     private double threatWeight;
     private double dyingWeight;

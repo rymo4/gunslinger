@@ -1,4 +1,4 @@
-package gunslinger.g1;
+package gunslinger.g1sub;
 import java.util.*;
 
 public class Player extends gunslinger.sim.Player
@@ -7,10 +7,10 @@ public class Player extends gunslinger.sim.Player
     private static int versions = 0;
     private int playerNumber = versions++;
 
-    public static final String VERSION = "0.1.5";
+    public static final String VERSION = "0.1.2";
 
     // Attributes to use in the feature vector
-    private final int NUM_FEATURES = 7;
+    private final int NUM_FEATURES = 5;
 
     public int FRIEND       = 0;
     public int SHOT         = 1;
@@ -18,7 +18,6 @@ public class Player extends gunslinger.sim.Player
     public int FRIENDS_FOE  = 3;
     public int ENEMY        = 4;
     public int NONE         = 5;
-    public int RETALIATION  = 6;
 
     private Random gen;
 
@@ -30,11 +29,11 @@ public class Player extends gunslinger.sim.Player
 
     private AiPlayer[] players;
     
-    private Relationship relationship;
+    //private Relationship relationship;
 
     public String name()
     {
-        return "g1(" + VERSION + ")" + (versions > 1 ? " v" + playerNumber : "");
+        return "g1sub(" + VERSION + ")" + (versions > 1 ? " v" + playerNumber : "");
     }
 
     public void init(int nplayers, int[] friends, int enemies[])
@@ -54,7 +53,7 @@ public class Player extends gunslinger.sim.Player
         this.friends = friends.clone();
 
         initFeatureVectors(nplayers, enemies, friends);
-        relationship = new Relationship(nplayers,friends,enemies, id);
+        //relationship = new Relationship(nplayers,friends,enemies, id);
     }
 
     private void initFeatureVectors(int n, int[] e, int[] f)
@@ -93,11 +92,13 @@ public class Player extends gunslinger.sim.Player
     // Return:
     //  int - the player id to shoot, return -1 if do not shoot anyone
     //
+    int round=0;
     public int shoot(int[] prevRound, boolean[] alive)
     {
+    	round++;
         updateLists(alive);
         updateFeatureVectors(prevRound, alive);
-        relationship.update(prevRound,alive);
+        //relationship.update(prevRound,alive);
 
         if (!provoked){
             return -1;
@@ -117,8 +118,10 @@ public class Player extends gunslinger.sim.Player
               playerToShoot = i;
           }
         }
-
-        return playerToShoot;
+        if(round>3)
+        	return playerToShoot;
+        else 
+        	return -1;
     }
 
     private void updateFeatureVectors(int[] prevRound, boolean[] alive)
@@ -139,11 +142,6 @@ public class Player extends gunslinger.sim.Player
             // player i last shot lastShot
             int lastShot = prevRound[i];
             if (lastShot >= 0) {
-                // If he shot someone and that person is alive
-                // might be target for retaliation
-                if (alive[lastShot]) {
-                    players[i].attrs[RETALIATION] = 1;
-                }
                 // If someone shot our friend
                 if (players[id].friends[lastShot])
                     // If we done currently identify him as being our friends enemy
@@ -155,9 +153,6 @@ public class Player extends gunslinger.sim.Player
                 if(i != id)
                     players[i].enemies[lastShot] = true;
                     players[lastShot].attrs[SHOT]++;
-            }
-            else {
-                players[i].attrs[RETALIATION] = 0;
             }
         }
     }
