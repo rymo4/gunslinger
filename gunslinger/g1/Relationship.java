@@ -57,7 +57,7 @@ public class Relationship {
 		
 	}
 	double enemy_constant1=0.3;
-	double enemy_constant2=0.5;
+	double enemy_constant2=0.3;
 	double friend_constant=0.9;
 	
 	public void update(int[] prevRound,boolean[] alive) {

@@ -118,7 +118,7 @@ public class Player extends gunslinger.sim.Player
               playerToShoot = i;
           }
         }
-        if(round>4)
+        if(round>3)
         	return playerToShoot;
         else 
         	return -1;
