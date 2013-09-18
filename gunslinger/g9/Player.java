@@ -13,12 +13,7 @@ public class Player extends gunslinger.sim.Player
     private static int versions = 0;
     // my version no
     private int version = versions++;
-    
-    // A simple fixed shoot rate strategy used by the dumb player
-    private static double ShootRate = 0.8;
-    
-    // name of the team
-    //
+
     public String name()
     {
         return "g9" + (versions > 1 ? " v" + version : "");
@@ -28,16 +23,10 @@ public class Player extends gunslinger.sim.Player
     //
     public void init(int nplayers, int[] friends, int enemies[])
     {
-        // Note:
-        //  Seed your random generator carefully
-        //  if you want to repeat the same random number sequence
-        //  pick your favourate seed number as the seed
-        //  Or you can simply use the clock time as your seed
-        //
         gen = new Random(System.currentTimeMillis());
         // long seed = 12345;
         // gen = new Random(seed);
-        
+
         this.roundNumber = 0;
         this.nplayers = nplayers;
         this.friends = friends.clone();
@@ -47,10 +36,12 @@ public class Player extends gunslinger.sim.Player
         roundHistory = new int[100][nplayers];
         shootRecord = new int[nplayers][nplayers];
         constShoot = new boolean[nplayers][nplayers];
-        
-        for (int i = 0; i < nplayers; i++) {
-            this.priority[i] = 0.0;
-        }
+        retaliate = new boolean[nplayers];
+        provoked = false;
+        num_alive_players = nplayers;
+        num_alive_enemies = enemies.length;
+        num_alive_friends = friends.length;
+        num_alive_neutrals = nplayers - enemies.length - friends.length;
     }
 
     boolean is_friend(int p) {
@@ -76,10 +67,11 @@ public class Player extends gunslinger.sim.Player
     }
 
     // update shootRecord, constShoot, 
-    void update_matrix(int[] prevRound, boolean[] alive) {
+    void update_stats(int[] prevRound, boolean[] alive) {
 
         roundHistory[roundNumber] = prevRound;
 
+        // update constShoot and shootRecord matric
         if (roundNumber > 1) {
             for (int i=0; i < nplayers; i++) {
                 for (int j=0; j < nplayers; j++) {
@@ -94,50 +86,69 @@ public class Player extends gunslinger.sim.Player
             }
         }
 
+        //provoked
+        for (int i=0; i<nplayers; i++) {
+            if (prevRound[i] == id && alive[i]) {
+                provoked = true;
+            }
+        }
+
+        //retaliated
+        if (roundNumber > 2) {
+            for (int i=0; i<nplayers; i++) {
+                int shooter = i;
+                int victim = prevRound[i];
+                if (victim != -1 && roundHistory[roundNumber-1][victim] == shooter) 
+                    retaliate[shooter] = true;
+            }
+        }
+
+        //update configuration
+
+        /*
+        for (int i=0; i<friends; i++) {
+            if (alive[ friends[i] ]) {
+                num_alive_friends++;
+            }
+        }
+        for (int i=0; i<enemies; i++) {
+            if (alive[ enemies[i] ]) {
+                num_alive_enemies++;
+            }
+        }
+        for (int i=0; i<nplayers; i++) {
+            if (alive[ i ]) {
+                num_alive_players++;
+            }
+        }
+        num_alive_neutrals = num_alive_players - num_alive_friends - num_alive_enemies;
+        */
+
     }
 
-    int num_of_alive( boolean[] alive ) {
-        int ret = 0;
-        for (int i=0; i<nplayers; ++i)
-            if (alive[i])
-                ret++;
-        return ret;
-    }
-    
-    // Pick a target to shoot
-    // Parameters:
-    //  prevRound - an array of previous shoots, prevRound[i] is the player that player i shot
-    //              -1 if player i did not shoot
-    //  alive - an array of player's status, true if the player is still alive in this round
-    // Return:
-    //  int - the player id to shoot, return -1 if do not shoot anyone
-    //
+
     public int shoot(int[] prevRound, boolean[] alive) {
         // Store the round history
         int target = -1;
 
-        if (roundNumber == 0) {
-
-            for (int i = 0; i < nplayers; ++i) {
-                if (i != id && alive[i] && is_enemy(i)) {
-                    target = i;
-                    break;
-                }
-            }
+        if (roundNumber==0) {
             roundNumber++;
-            //print_priority();
-            return target;
-        }
-
-        update_matrix(prevRound, alive);
-
-        if (num_of_alive(alive) == 2) {
-            roundNumber++;
-            //print_priority();
             return -1;
         }
-        
-        if (num_of_alive(alive) <= 3) {
+
+        /*
+        if (!provoked && num_of_alive(alive) > 3) {
+            roundNumber++;
+            return -1;
+        }
+        */
+
+        update_stats(prevRound, alive);
+        this.prevRound = prevRound;
+        this.alive = alive;
+
+        if (num_of_alive() <= 3) {
+            roundNumber++;
 
             Vector<Integer> alive_e = new Vector<Integer>();
             Vector<Integer> alive_f = new Vector<Integer>();
@@ -156,46 +167,27 @@ public class Player extends gunslinger.sim.Player
                 }
             }
 
-            if (alive_f.size() == 2) {
-                roundNumber++;
-                //print_priority();
+            if (alive_f.size() == 2)
                 return -1;
-            }
 
-            if (alive_f.size() == 1 && alive_n.size() == 1) {
-                roundNumber++;
-                //print_priority();
+            if (alive_f.size() == 1 && alive_n.size() == 1)
                 return alive_n.get(0);
-            }
 
             if (alive_f.size() == 1 && alive_e.size() == 1) {
                 int f = alive_f.get(0);
                 int e = alive_e.get(0);
-                if (shootRecord[f][e] > 0) {
-                    roundNumber++;
-                    //print_priority();
+                if (shootRecord[f][e] > 0)
                     return e;
-                } else {
-                    roundNumber++;
-                    //print_priority();
+                else
                     return -1;
-                }
             }
 
             if (alive_n.size() == 2) {
                 int n1 = alive_n.get(0);
                 int n2 = alive_n.get(1);
-                roundNumber++;
 
-                if (prevRound[n1] == n2) {
-                    //print_priority();
-                    return n2;
-                }
-                if (prevRound[n2] == n1) {
-                    //print_priority();
-                    return n1;
-                }
-                //print_priority();
+                if (prevRound[n1] == n2) return n2;
+                if (prevRound[n2] == n1) return n1;
                 return -1;
             }
 
@@ -203,14 +195,8 @@ public class Player extends gunslinger.sim.Player
                 int e1 = alive_e.get(0);
                 int e2 = alive_e.get(1);
 
-                roundNumber++;
-                //print_priority();
-                if (prevRound[e1] == e2) {
-                    return e2;
-                }
-                if (prevRound[e2] == e1) {
-                    return e1;
-                }
+                if (prevRound[e1] == e2) return e2;
+                if (prevRound[e2] == e1) return e1;
                 return -1;
             }
 
@@ -218,28 +204,15 @@ public class Player extends gunslinger.sim.Player
                 int n = alive_n.get(0);
                 int e = alive_e.get(0);
 
-                roundNumber++;
-                //print_priority();
-                if (prevRound[n] == e) {
-                    return e;
-                }
-                if (prevRound[e] == n) {
-                    return e;
-                }
+                if (prevRound[n] == e) return e;
+                if (prevRound[e] == n) return e;
                 return -1;
             }
         }
 
         System.out.println("--------------");
 
-        /* Strategy used by the dumb player:
-         Decide whether to shoot or not with a fixed shoot rate
-         If decided to shoot, randomly pick one alive that is not your friend */
-        
-
-
-
-        this.calculatePriority();
+        this.calculatePriority(prevRound, alive);
 
         // calculate who to shoot by max priority
         target = -1;
@@ -250,17 +223,16 @@ public class Player extends gunslinger.sim.Player
             max = priority[i];
         }
 
-        
         for (int i = 0; i < priority.length; i++) {
-            
             if (priority[i] > max && alive[i]) {
                 target = i;
                 max=priority[i];
             }
         }
-        
+
+        if (max <= SHOOTING_THRESHOLD) target = -1;
+
         roundNumber++;
-        //print_priority();
         return target;
     }
 
@@ -275,103 +247,127 @@ public class Player extends gunslinger.sim.Player
         System.out.println();
     }
 
-    
-    public void calculatePriority() {
-        boolean[] hasPriorityAssigned = new boolean[nplayers];
 
+    public void calculatePriority(int prevRound[], boolean[] alive) {
+        // System.out.println("calculating priority\n\n\n\n\n\n");
+        for (int i = 0; i < nplayers; i++) {
+            priority[i] = 0;
+        }
 
-        for (int i=0; i<nplayers; i++) {
+        for (int i=0; i < nplayers; i++) {
             int shooter = i;
-            int victim = roundHistory[roundNumber][i];
+            int victim = prevRound[i];
 
-            // anyone shoot us
-            if (victim == id) {
-                if (is_enemy(shooter)) {
-                    priority[shooter] += ENEMY_SHOOTING_YOU;
-                } else if (is_friend(shooter)) {
-                    priority[shooter] += FRIEND_SHOOTING_YOU;
-                } else {
-                    priority[shooter] += NEUTRAL_SHOOTING_YOU;
-                }
-                hasPriorityAssigned[shooter] = true;
+            if (!validTarget(shooter) || !validTarget(victim)) {
+                continue;
             }
 
+            if (is_enemy(shooter)) {
+                // System.out.println("shooting enemy");
+                priority[shooter] += 10;
+            }
 
+            if (hasBeenShot(shooter) != -1 && constShoot[shooter][victim] && is_enemy(victim)) {
+                // System.out.println("shooting constant enemy");
+                priority[victim] += 10;
+            }
 
-
-            // anyone shoot friend
-            if (is_friend(victim)) {
-                if (!is_friend(shooter)) {
-                    if (is_enemy(shooter)) {
-                        priority[shooter] += ENEMY_SHOOTING_FRIEND;
-                    } else {
-                        priority[shooter] += NEUTRAL_SHOOTING_FRIEND;
+            if (hasBeenShot(id) != -1) {
+                int who_shot_me = hasBeenShot(id);
+                if (hasBeenShot(who_shot_me) != -1) {
+                    int who_shot_who_shot_me = hasBeenShot(who_shot_me);
+                    if (validTarget(who_shot_who_shot_me) && hasBeenShot(who_shot_who_shot_me) == -1) {
+                        // System.out.println("weird case");
+                        if (is_enemy(who_shot_me)) {
+                            priority[who_shot_me] += 9;
+                        } else if (is_neutral(who_shot_me)) {
+                            priority[who_shot_me] += 8;
+                        }
                     }
-                    hasPriorityAssigned[shooter] = true;
                 }
             }
 
+        }
 
-
-
-            // friend shoot enemy
-            if (is_friend(shooter) && is_enemy(victim)) {
-                if (constShoot[shooter][victim])
-                    priority[victim] += FRIEND_CONST_SHOOT_ENEMY;
-                else
-                    priority[victim] += FRIEND_SHOOT_ENEMY;
-            }
-
-            // neutral shoot enemy
-            if (is_neutral(shooter) && is_enemy(victim)) {
-                if (constShoot[shooter][victim])
-                    priority[victim] += NEUTRAL_CONST_SHOOT_ENEMY;
-                else {
+        // if any of our friends have been shot, then retaliate
+        for (int j = 0; j < nplayers; j++) {
+            if (alive[j] && is_friend(j) && hasBeenShot(j) != -1) {
+                // System.out.println("helping friend");
+                int who_shot_friend = hasBeenShot(j);
+                if (alive[who_shot_friend]) {
+                    if (is_enemy(who_shot_friend)) {
+                        priority[who_shot_friend] += 6;
+                    } else if (is_neutral(who_shot_friend)) {
+                        priority[who_shot_friend] += 5;
+                    }
                 }
             }
-
-            // enemy shoot enemy
-            if (is_enemy(shooter) && is_enemy(victim)) {
-                if (constShoot[shooter][victim])
-                    priority[victim] += ENEMY_CONST_SHOOT_ENEMY;
-            }
-
-
-
-
-            // friend shoot neutral
-            if (is_friend(shooter) && is_neutral(victim)) {
-            }
-
-            // neutral shoot neutral
-            if (is_neutral(shooter) && is_neutral(victim)) {
-            }
-
-            // enemy shoot neutral
-            if (is_enemy(shooter) && is_neutral(victim)) {
-            }
         }
-       
-        // Shooting an enemy who doesn't fit the above cases
-        for (int i = 0; i < enemies.length; i++) {
-            if (!hasPriorityAssigned[enemies[i]]) {
-                priority[enemies[i]] += ENEMY;
+
+        if (num_alive_enemies < num_alive_friends) {
+            for (int i = 0; i < nplayers; i++) {
+                for (int j = 0; j < nplayers; j++) {
+                    if (alive[i] && is_friend(i) && constShoot[i][j] && !is_friend(j)) {
+                        priority[j] += 5;
+                    }
+                }
             }
         }
 
+        /*
+        System.out.println("printing priority");
+        System.out.println(Arrays.toString(priority));
+        */
     }
-    
+
+    public boolean validTarget(int i) {
+        if (i != -1 && this.alive[i]) {
+            return true;
+        }
+        return false;
+    }
+
+    public int hasBeenShot(int player) {
+        for (int i = 0; i < nplayers; i++) {
+            if (this.prevRound[i] == player) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public int num_of_alive() {
+        int num = 0;
+        for (int i = 0; i < nplayers; i++) {
+            if (this.alive[i]) {
+                num++;
+            }
+        } 
+        return num;
+    }
+
     private Random gen;
     private int nplayers;
     private int roundNumber;
+    private boolean provoked = false;
     private int[] friends;
     private int[] enemies;
     private int[][] roundHistory;
     private int[][] shootRecord;
     private boolean[][] constShoot;
-    
+    private boolean[] retaliate;
+    private boolean[] alive;
+    private int[] prevRound;
+
     private double[] priority;
-    
+
+    private int num_alive_players;
+    private int num_alive_enemies;
+    private int num_alive_friends;
+    private int num_alive_neutrals;
+    private int config_type;
+
+    private static final double SHOOTING_THRESHOLD = 0.0;
     private static final double ENEMY_SHOOTING_YOU = .5;
     private static final double NEUTRAL_SHOOTING_YOU = .4;
     private static final double FRIEND_SHOOTING_YOU = .35;
