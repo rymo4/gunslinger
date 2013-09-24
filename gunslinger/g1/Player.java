@@ -25,6 +25,7 @@ public class Player extends gunslinger.sim.Player
     private int nplayers;
     private int[] friends;
     private int[] enemies;
+    private int round=0;
 
     private boolean provoked;
 
@@ -117,8 +118,17 @@ public class Player extends gunslinger.sim.Player
               playerToShoot = i;
           }
         }
-
+        round++;
         return playerToShoot;
+//        if(enemies.length<nplayers/2){
+//        	return playerToShoot;
+//        }
+//        else{
+//        	if (round<=3)
+//        		return -1;
+//        	else
+//        		return playerToShoot;
+//        }
     }
 
     private void updateFeatureVectors(int[] prevRound, boolean[] alive)

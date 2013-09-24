@@ -3,6 +3,7 @@ package gunslinger.g1;
 import java.util.*;
 import gunslinger.g1.Player;
 
+
 public class Test
 {
     private static gunslinger.g1.Player player;
