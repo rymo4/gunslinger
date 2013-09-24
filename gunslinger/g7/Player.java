@@ -1,4 +1,4 @@
-//Deliverable3 9/17
+//Deliverable4 9/21
 package gunslinger.g7;
 
 import java.util.*;
@@ -35,6 +35,28 @@ public class Player extends gunslinger.sim.Player
         this.nplayers = nplayers;
         this.friends = friends.clone();
         this.enemies = enemies.clone();
+        
+        ratioEtoP = (double)(enemies.length)/(nplayers);
+        ratioFtoP = (double)(friends.length)/(nplayers);
+        
+        if((ratioEtoP >= 0.9 && (ratioFtoP <= 0.02)) || (ratioEtoP > 0.6 && friends.length == 0)) {
+        	strategy = 1;
+        	//System.out.println("strategy is " + strategy);
+        	//System.exit(1);
+        }
+        else if(ratioEtoP >= 0.8 && ratioFtoP <= 0.1) {
+        	strategy = 2;
+        	//System.out.println("strategy is " + strategy);
+        	//System.exit(1);
+        }
+        else if(ratioFtoP >= 0.6 && enemies.length != 0)
+        	strategy = 3;
+        else if(ratioFtoP >= 0.9 && ratioEtoP <= 0.1)
+        	strategy = 0;
+        
+        System.out.println("strategy is " + strategy);
+        //System.exit(1);
+        
         playerArr = new PlayerStats[nplayers];
         for(int i=0;i<nplayers;i++)
         	playerArr[i] = new PlayerStats(nplayers);
@@ -72,14 +94,44 @@ public class Player extends gunslinger.sim.Player
         // Shoot or not in this round?
     	int target=-1;
         boolean shoot=true;
+        
+      //Special Case1: Many enemies, few friends
+        if(strategy == 1) {
+        	System.out.println("******************************target: " + target);
+        	return target;
+        }
+        else if(strategy == 2) 
+        {
+        	//Mimic Group3's strategy
+        	if(round == 1) 
+        	{
+        		round++;
+        		return target;
+        	}
+        	
+        	for(int i=0; i < prevRound.length; i++) 
+        	{
+        		if(prevRound[i] == id)
+        			target = i;
+        	}
+        	
+        	return target;
+        }
+        else if(strategy == 3) //Special Case 2: Many Friends few enemies
+        {
+        	//Attack our enemies only.
+        	friendWeight = 3.0;
+        	enemyWeight = 0.0;
+        }
+        
     	if(round==1)
     	{
     		double ratio= (double)(nplayers-enemies.length-friends.length-1)/enemies.length;
     		//System.out.println("RATIO: " + ratio);
-    		if (ratio>0.4)
+    		/*if (ratio>0.4)
     			shoot=false;
     		if (shoot)
-    			target=enemies[0];
+    			target=enemies[0];*/
     		round++;
     		return target;
     	}
@@ -97,71 +149,33 @@ public class Player extends gunslinger.sim.Player
     		//checkShotFriend(prevRound);
     		
     		//Ranking Formula to determine which player to shoot
-    		double tempVar;
+    		double tempVar=0;
     		for (int i=0;i<nplayers;i++) 
     		{
-    			//Probability that player dies
-    			tempVar=playerArr[i].getProbDie();
-    			// did player shoot somebody in the prev round but didn't kill | retaliation	
-    			if (prevRound[i]>0) 
-    			{
-    				if (alive[prevRound[i]])
-    					tempVar=tempVar*(1-weightD)+weightD;
-    				//System.out.println(i + " was Shot");
-    			}
-    			else
-    				tempVar=tempVar*(1-weightD);
-    			//playerArr[i].setProbDie(tempVar);
-    			
-    			// was this player shot by somebody in prevRound | consistency
-    			for (int j=0; j<prevRound.length; j++)
-    			{
-    				if (prevRound[j]==i)
-    				{
-    					if (alive[j])
-    					{
-    						tempVar+=weightD2;
-    					}
-    						
-    				}
-    			}
-    			playerArr[i].setProbDie(tempVar/2);
-
-    			//Probability that player is a threat to us
-    			tempVar=playerArr[i].getProbThreat();
-    			if (prevRound[i]==id)
-    				tempVar=tempVar*(1-weightT)+weightT;
-    			else
-    				tempVar=tempVar*(1-weightT);
-    			playerArr[i].setProbThreat(tempVar);
-    		
-    			//Don't shoot friends or players that are already dead
-    			if (playerArr[i].getFriend() || !playerArr[i].getAlive())
-    				priorityShoot[i]=0;
-    			else 
-    			{
-    				//Determine priority of enemies or neutrals based on values calculated above
-    				tempVar=threatWeight*playerArr[i].getProbThreat()+dyingWeight*playerArr[i].getProbDie();
-    				if (playerArr[i].getEnemy())
-    					tempVar=tempVar+enemyWeight;
-    				
-    				//Did player shoot our friend in prevRound but didnt manage to kill
-    				if (playerArr[i].getShotAliveFriend(friends, prevRound[i], alive))
-    				{
-    					tempVar=tempVar+friendWeight;
-    				}
-    				//tempVar=tempVar+friendWeight*(playerArr[i].getNumShotFriends(friends)/round);
-    				priorityShoot[i]=tempVar;
-    			}
-    		}
-    		
-    		//Shoot the player with the highest priority
+				if (alive[i]==false){
+					priorityShoot[i]=0;
+					continue;
+				}
+				tempVar=0;
+				if (prevRound[i]==id)
+					tempVar=1;
+				if (playerArr[i].getFriend()== false && playerArr[i].getShotAliveFriend(friends, prevRound[i], alive))
+					tempVar+=0.5;
+				if (playerArr[i].getEnemy() && playerArr[i].getShotAlivePlayer(prevRound[i], alive) && !playerArr[i].getShotAliveFriend(friends, prevRound[i], alive))
+					tempVar+=0.25;
+				if (playerArr[i].getEnemy() && ArrayContains(prevRound, i)){
+					for (int j=0; j<prevRound.length;j++)
+					{
+						if (prevRound[j]==i && alive[j] && !ArrayContains (prevRound,j))
+							tempVar+=0.1;
+					}
+				}
+				priorityShoot[i]=tempVar;
+			}
+			
     		int to_shoot=getMaxIndex(priorityShoot);
     		if(to_shoot>0 && to_shoot!=id)
     			target=to_shoot;
-    		if (target!=-1 && playerArr[target].getNumShotFriends(friends)<1 && !playerArr[target].shotUs(id) && !playerArr[target].getEnemy())
-    			target=-1;
-    			
 	    	/*
 	    	System.out.print("[");
 	    	for(int i=0; i < priorityShoot.length; i++) {
@@ -180,13 +194,17 @@ public class Player extends gunslinger.sim.Player
     {
     	double max=0;
     	int maxindex = 0;
-    	for(int i=0;i<a.length;i++)
+    	for(int i=0;i<a.length;i++){
     		if(a[i]>max)
     		{
     			max=a[i];
     			maxindex=i;
     		}
-    	return maxindex;
+		}
+		if (max>0)		
+	    	return maxindex;
+		else
+			return -1;
     }
     
     public void updateShootHistory(int p[])
@@ -283,5 +301,10 @@ public class Player extends gunslinger.sim.Player
     private double dyingWeight;
     private double enemyWeight;
     
+
+    private double ratioEtoP;
+    private double ratioFtoP;
+    
+    private int strategy;
     private int round;
 }

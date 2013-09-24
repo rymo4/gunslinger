@@ -1,5 +1,7 @@
 package gunslinger.g2;
 
+import gunslinger.sim.Gunslinger;
+
 import java.util.*;
 
 
@@ -15,11 +17,14 @@ public class Player extends gunslinger.sim.Player
     private int[] friends;
     private int[] enemies;
     
-    
-    
     //Book-keeping variables
     private PriorityQueue<PriorityTuple> priorityList;
     private int[][] whoShotWhomCount;
+    
+    //yash - endgame strategy
+    private boolean prevAlive[];
+    private int roundsWithNoDeaths;
+    
     //bingyi-build the dynamic 2D table to record history
     private List<List<Integer>> record = new ArrayList<List<Integer>>();
     //bingyi
@@ -27,6 +32,9 @@ public class Player extends gunslinger.sim.Player
     //yash
     private int prediction[][];
     private double next_round[][];
+    
+    //passive mode
+    private boolean passive;
     
     // name of the team
     public String name()
@@ -41,10 +49,17 @@ public class Player extends gunslinger.sim.Player
     	 this.nplayers = nplayers;
          this.friends = friends.clone();
          this.enemies = enemies.clone();
+         //activate passive mode if no of enemies is very high
+         if(friends.length>=(nplayers/PASSIVE_ACTIVE) || enemies.length>=(nplayers/PASSIVE_ACTIVE))
+        	 passive=true;
+         else
+        	 passive=false;
          
+         this.prevAlive=new boolean[nplayers];
          for(int i=0;i<nplayers;i++)
          {
          	record.add(new ArrayList<Integer>());
+         	prevAlive[i]=true;
          }
          
          whoShotWhomCount=new int[nplayers][nplayers];
@@ -53,202 +68,264 @@ public class Player extends gunslinger.sim.Player
          //yash
          prediction=new int[this.nplayers][this.nplayers];
          next_round=new double[this.nplayers][this.nplayers];
+         roundsWithNoDeaths=0;
          
     }
 
     
-    // Pick a target to shoot
-    // Parameters:
-    //  prevRound - an array of previous shoots, prevRound[i] is the player that player i shot
-    //              -1 if player i did not shoot
-    //  alive - an array of player's status, true if the player is still alive in this round
-    // Return:
-    //  int - the player id to shoot, return -1 if do not shoot anyone
-    //
     public int shoot(int[] prevRound, boolean[] alive)
     {
-    	
-        if(prevRound==null)
-        {
-        	return -1; //Make love, not war
-        }
-        
-        
-        System.out.println(Arrays.toString(friends));
-        
-        //Keep track of who got shot, how many times earlier
-        boolean[] shotAt=new boolean[prevRound.length];
-        int[] shotBy=new int[prevRound.length];
-        Arrays.fill(shotBy,-1);
-        
-        for(int player=0;player<prevRound.length;player++)
-        {
-        	if(prevRound[player]==-1)
-        		continue;
-        	shotBy[prevRound[player]]=player;
-        	shotAt[prevRound[player]]=true;
-        }
-        
-        //bingyi
-        for(int player=0;player<prevRound.length;player++)
-        	record.get(player).add(prevRound[player]);
-        
-        //yash
-        //call prediction function here
-        predictNextRound(next_round,record, alive);
-        
-        //summing up next_round stats
-        double[] next_round_sum=new double[nplayers];
-        
-        //add the columns of prediction matrix to get player most likely to be shot at
-        for(int i=0;i<nplayers;i++)
-        {
-        	for(int j=0;j<nplayers;j++)
-        	{
-        		next_round_sum[i]+=next_round[j][i];
-        	}
-        }
-        
-        //d
-        System.out.println("Typical "+Arrays.toString(next_round_sum));
-        
-        for(int player=0;player<prevRound.length;player++)
-        {
-        	if(prevRound[player]!=-1)
-        		whoShotWhomCount[player][prevRound[player]]++;
-        	gaugeSeverity(player,prevRound[player],alive,shotAt,shotBy,prevRound,next_round_sum);
-        }
-        //you shoot; he's still alive
-    	if(prevRound[this.id]!=-1 && alive[prevRound[this.id]])
-    	{
-    		priorityList.add(new PriorityTuple(prevRound[this.id],CON));
-    	}
-        
-        
-        //Printing the next_round_sum array returned
-        for(int i=0;i<next_round.length;i++)
-        {
-        	for(int j=0;j<next_round.length;j++)
-        	{
-        		System.out.print(next_round[i][j]);
-        	}
-        	System.out.println();
-        }
-        
-        
-        /*
-        int popular_target[]=new int[prevRound.length];
-        int players[]=new int[prevRound.length];
-        
-        for(int i=0;i<players.length;i++)
-        {
-        	players[i]=i;
-        }
-        
-        
-        
-        //sort player and popular_target arrays to get sorted list of targets
-        for(int i=0;i<popular_target.length;i++)
-        {
-        	for(int j=0;j<popular_target.length-1;j++)
-        	{
-        		if(popular_target[j]<popular_target[j+1])
-        		{
-        			int temp=popular_target[j];
-        			popular_target[j]=popular_target[j+1];
-        			popular_target[j+1]=temp;
-        			temp=players[j];
-        			players[j]=players[j+1];
-        			players[j+1]=temp;
-        		}
-        	}
-        }
-        //We only need the most likely target, but I'm sorting the list just to get an idea of what our targets are like
-        
-        //printing players and their likeliness to be shot
-        for(int j=0;j<prediction.length;j++)
-    	{
-    		System.out.print("("+players[j]+","+popular_target[j]+") ");
-    	}
-    	System.out.println();
-        
-        */
-        /*
-        //shoot the most likely player if he is not a friend
-        for(int i=0;i<popular_target.length;i++)
-        {
-        //	if((isEnemy(players[i]) || isNeutral(players[i])) && players[i]!=this.id && alive[players[i]])
-        	if((isEnemy(players[i]) || Enemyus(players[i], record) || EnemyourAF(players[i], record, alive))&& players[i]!=this.id && alive[players[i]])	
+    	try
 		{
-        		return players[i];
-        	}
-        }
-        */
+    	
+			if(prevRound==null)
+			{
+				return -1; //Make love, not war
+			}
+			/************************** END GAME START*********************/
+			//yash - endgame strategy
+			
+			if(Arrays.toString(alive).equals(Arrays.toString(prevAlive)))
+			{
+				roundsWithNoDeaths++;
+			}
+			else
+			{
+				roundsWithNoDeaths=0;
+			}
+			
+			if(roundsWithNoDeaths==3 && !passive)
+			{
+				ArrayList<Integer> targetList=new ArrayList<Integer>();
+				
+				//implement endgame strategy here
+				//check if everyone we shot before are dead
+				boolean shotBeforeDead=true;
+				//check if all live people have never shot us before
+				boolean neverShotUsBefore=true;
+				//check how many friends we have left
+				int live_friends=0;
+				int live_players=0;
+				
+				for(int i=0;i<whoShotWhomCount.length;i++)
+				{
+					if(alive[i])
+						live_players++;
+					if(alive[i] && isFriend(i))
+						live_friends++;
+				}
+				
+				//if all players but one who are still alive are friends, shoot that player
+				//but don't shoot neutrals if there are too many enemies since it will be a net gain for others
+				if(live_players-live_friends-1==1)
+					for(int i=0;i<alive.length;i++)
+						if(alive[i] && this.id!=i && !isFriend(i) && isEnemy(i))
+							return i;
+						else if (alive[i] && this.id!=i && !isFriend(i) && enemies.length<=nplayers/2)
+							return i;
+							
+				for(int i=0;i<whoShotWhomCount.length;i++)
+				{
+					if(whoShotWhomCount[this.id][i]!=0 && alive[i])
+						shotBeforeDead=false;
+					if(alive[i] && (whoShotWhomCount[i][this.id]!=0))
+						neverShotUsBefore=false;
+					if(alive[i] && isEnemy(i))
+						for(int j=0;j<whoShotWhomCount.length;j++)
+						{
+							//enemyAndTargetNotFriends
+							if(alive[i] && alive[j] && (whoShotWhomCount[j][i]!=0 || whoShotWhomCount[i][j]!=0))
+								if(!targetList.contains(i))
+									targetList.add(i);
+						}
+					
+				}
+				
+				//shoot in the endgame only if the conditions above are satisfied
+				if(shotBeforeDead && live_friends>=ENDGAME_MIN_ALIVE_FRIENDS && targetList.size()!=0)
+				{
+					return targetList.remove(0);
+				}
+				return -1;
+			}
+			
+			/********************* ENDGAME END ***************************************************/
+			
+//			if(Gunslinger.debug)
+//				System.out.println(Arrays.toString(friends));
+			
+			//Keep track of who got shot, how many times earlier
+			boolean[] shotAt=new boolean[prevRound.length];
+			int[] shotBy=new int[prevRound.length];
+			Arrays.fill(shotBy,-1);
+			
+			for(int player=0;player<prevRound.length;player++)
+			{
+				if(prevRound[player]==-1)
+					continue;
+				shotBy[prevRound[player]]=player;
+				shotAt[prevRound[player]]=true;
+			}
+			
+			//bingyi
+			for(int player=0;player<prevRound.length;player++)
+				record.get(player).add(prevRound[player]);
+			
+			//yash
+			//call prediction function here
+			predictNextRound(next_round,record, alive);
+			
+			//summing up next_round stats
+			double[] next_round_sum=new double[nplayers];
+			
+			//add the columns of prediction matrix to get player most likely to be shot at
+			for(int i=0;i<nplayers;i++)
+			{
+				for(int j=0;j<nplayers;j++)
+				{
+					next_round_sum[i]+=next_round[j][i];
+				}
+			}
+			
+			//d'
+//			if(Gunslinger.debug)
+//				System.out.println("Typical "+Arrays.toString(next_round_sum));
+			
+			for(int player=0;player<prevRound.length;player++)
+			{
+				if(prevRound[player]!=-1)
+					whoShotWhomCount[player][prevRound[player]]++;
+				gaugeSeverity(player,prevRound[player],alive,shotAt,shotBy,prevRound,next_round_sum);
+			}
+			
+			//you shoot; he's still alive
+			if(prevRound[this.id]!=-1 && alive[prevRound[this.id]])
+			{
+				priorityList.add(new PriorityTuple(prevRound[this.id],CON));
+			}
+			
+			
+			//Printing the next_round_sum array returned
+			
+//			if(Gunslinger.debug)
+//			{
+//				for(int i=0;i<next_round.length;i++)
+//				{
+//					for(int j=0;j<next_round.length;j++)
+//					{
+//						System.out.print(next_round[i][j]);
+//					}
+//					System.out.println();
+//				}
+//			}
+			
+			
+			
+			//Choose whom to shoot
+			//yash
+			
+			
+			//ArrayList<Integer> targets=new ArrayList<Integer>();
+//			System.out.println("Before do...while");
+			int target;
+			PriorityTuple firstTuple;
+			double maxNextRoundSum;
+			try
+			{
+				do
+				{
+				
+					synchronized(priorityList)
+					{
+						//if no enemies or neutrals are to be shot at
+						if(priorityList.size()==0)
+						{
+							 priorityList.clear();
+							 return -1;
+						}
+						firstTuple=priorityList.remove();
+					}
+				
+				maxNextRoundSum=next_round_sum[firstTuple.playerId];
+				target=firstTuple.playerId;
+				//targets.add(firstTuple.playerId);
+				}
+				while(isFriend(target));
+			}
+			catch(NullPointerException e)
+			{
+				System.out.println("NullPointer: "+e);
+				e.printStackTrace();
+				return -1;
+			}
+			
+//			System.out.println("Reached passive condition check");
+//			boolean shoot_condition;
+			if(passive)
+				while(priorityList.size()!=0 && firstTuple.priority==priorityList.peek().priority && (isEnemy(priorityList.peek().playerId) || Enemyus(priorityList.peek().playerId, record)))
+					//Bingyi suggestion
+					//while(priorityList.size()!=0 && firstTuple.priority==priorityList.peek().priority && (isEnemy(priorityList.peek().playerId) || Enemyus(priorityList.peek().playerId, record)))
+					{
+						if(priorityList.size()!=0)
+						{
+//							System.out.println("Reached removal of priority tuple");
+							PriorityTuple anotherTuple=priorityList.remove();
+							//targets.add(tupleToAdd.playerId);
+							if(next_round_sum[anotherTuple.playerId]>maxNextRoundSum)
+							{
+								maxNextRoundSum=next_round_sum[anotherTuple.playerId];
+								target=anotherTuple.playerId;
+							}
+						}
+					}
+			else
+				while(priorityList.size()!=0 && firstTuple.priority==priorityList.peek().priority)
+					//Bingyi suggestion
+					//while(priorityList.size()!=0 && firstTuple.priority==priorityList.peek().priority && (isEnemy(priorityList.peek().playerId) || Enemyus(priorityList.peek().playerId, record)))
+					{
+//						if(priorityList.size()!=0)
+//						{
+//							System.out.println("Reached removal of priority tuple");
+							PriorityTuple anotherTuple=priorityList.remove();
+							//targets.add(tupleToAdd.playerId);
+							if(next_round_sum[anotherTuple.playerId]>maxNextRoundSum)
+							{
+								maxNextRoundSum=next_round_sum[anotherTuple.playerId];
+								target=anotherTuple.playerId;
+							}
+//						}
+					}
+//			while(shoot_condition)
+//			//Bingyi suggestion
+//			//while(priorityList.size()!=0 && firstTuple.priority==priorityList.peek().priority && (isEnemy(priorityList.peek().playerId) || Enemyus(priorityList.peek().playerId, record)))
+//			{
+//				if(priorityList.size()!=0)
+//				{
+////					System.out.println("Reached removal of priority tuple");
+//					PriorityTuple anotherTuple=priorityList.remove();
+//					//targets.add(tupleToAdd.playerId);
+//					if(next_round_sum[anotherTuple.playerId]>maxNextRoundSum)
+//					{
+//						maxNextRoundSum=next_round_sum[anotherTuple.playerId];
+//						target=anotherTuple.playerId;
+//					}
+//				}
+//			}
+			
+			priorityList.clear();
+			return target;
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception: "+e);
+			e.printStackTrace();
+			return -1;
+		}
         
-        //Choose whom to shoot
-        
-        //if no enemies or neutrals are to be shot at
-        if(priorityList.size()==0)
-        {
-        	 priorityList.clear();
-        	 return -1;
-        }
-        //yash
-        
-        
-        //ArrayList<Integer> targets=new ArrayList<Integer>();
-        int target;
-        PriorityTuple firstTuple;
-        double maxNextRoundSum;
-        try
-        {
-        do
-        {
-        firstTuple=priorityList.remove();
-        
-        maxNextRoundSum=next_round_sum[firstTuple.playerId];
-        target=firstTuple.playerId;
-        //targets.add(firstTuple.playerId);
-        }
-        while(isFriend(target));
-        }
-        catch(NullPointerException e)
-        {
-        	return -1;
-        }
-        
-        while(priorityList.size()!=0 && firstTuple.priority==priorityList.peek().priority)
-        {
-        	PriorityTuple anotherTuple=priorityList.remove();
-        	//targets.add(tupleToAdd.playerId);
-        	if(next_round_sum[anotherTuple.playerId]>maxNextRoundSum)
-        	{
-        		maxNextRoundSum=next_round_sum[anotherTuple.playerId];
-        		target=anotherTuple.playerId;
-        	}	
-        }
-        
-        priorityList.clear();
-        return target;
-        
-        
-//        System.out.println("this is our hate most list\n");
-//        printListofArray(hate_most); 
-//        if(priorityList.size()==0)
-//        	return -1;
-//        
-//        attentionSeekingPrint(priorityList.toString());
-        
-//        int myTarget=getMyTarget(shotAt);
-//        priorityList.clear();
-//    	 //bingyi
-//        printMatrix(record);
-//        //bingyi		
-//        return myTarget;
     }
     
     //bingyi
-	public void predictNextRound(double[][] next_round, List<List<Integer>> m, boolean[] alive)	
+    public void predictNextRound(double[][] next_round, List<List<Integer>> m, boolean[] alive)	
 	{
 		next_round=new double[nplayers][nplayers];
 		int columns = m.get(0).size();
@@ -268,82 +345,44 @@ public class Player extends gunslinger.sim.Player
 			for (int j=0; j<columns;j++) {
 				
 				//d
-				System.out.println(alive.length+" "+i+" "+m.get(i).get(j)+" "+columns);
+				
+//				if(Gunslinger.debug)
+//					System.out.println(alive.length+" "+i+" "+m.get(i).get(j)+" "+columns);
 				
 				if (m.get(i).get(j) != -1 && alive[i] && alive[m.get(i).get(j)]) {
 					next_round[i][m.get(i).get(j)]+=SHOOT_AGAIN_PROB;
+					next_round[m.get(i).get(j)][i]+=SHOOT_AGAIN_PROB_REVERSE;
 				}
 			}
 			
 		}
 		
-		//Normalize
-		/*
-		for(int row=0;row<nplayers;row++)
-		{
-			double sum=0;
-			for(int col=0;col<nplayers;col++)
-			{
-				System.out.println("--"+next_round[row][col]);
-				sum+=next_round[row][col];
-			}
-			for(int col=0;col<nplayers;col++)
-			{
-				next_round[row][col]=1.0*next_round[row][col]/sum;
-				
-				//d
-				System.out.println(String.format("next rd %d %d %.5f",row,col,next_round[row][col]));
-			}
-			
-		}*/
 	}
 	
+	
 	public void printpredict(int[][] m){
-	for (int i=0; i<m[0].length; i++) { 
-		for (int j=0;j<m[0].length;j++) {
+	for (int i=0; i<m[0].length; i++)
+	{ 
+		for (int j=0;j<m[0].length;j++)
+		{
     			System.out.println( m[i][j]+" ");
   		} 
   		System.out.println();
   		}
 	}
+	
     //bingyi 
     public void attentionSeekingPrint(String s)
     {
     	System.out.println("----------------\n"+s+"\n-----------------");
     }
-    
-    private int getMyTarget(int[] shotAt) 
-    {
-		
-    	/*PriorityTuple firstTuple=priorityList.remove();
-    	if(shotAt[firstTuple.getPlayerId()]>0)
-    		return firstTuple.getPlayerId();
-    	
-    	PriorityTuple nextTuple;
-    	if(priorityList.size()!=0)
-    		nextTuple=priorityList.remove();
-    	
-    	while(nextTuple.getPriority()==firstTuple.getPriority())
-    	{
-    		if(shotAt[firstTuple.getPlayerId()]<shotAt[nextTuple.getPlayerId()])
-    			return nextTuple.getPlayerId();
-    		
-    		if(priorityList.size()!=0)
-        		nextTuple=priorityList.remove();
-    		else
-    			break;
-    	}
-    	
-    	return firstTuple.getPlayerId();*/
-    	
-    	return priorityList.remove().getPlayerId();
-    	
-	}
 
-	private void gaugeSeverity(int shooter,int target, boolean[] alive,boolean[] shotAt, int[] shotBy, int[] prevRound,double[] next_round_sum) {
+	private void gaugeSeverity(int shooter,int target, boolean[] alive,boolean[] shotAt, int[] shotBy, int[] prevRound,double[] next_round_sum) 
+	{
 		
 		//d
-		System.out.println(shooter+" "+target);
+//		if(Gunslinger.debug)
+//			System.out.println(shooter+" "+target);
 		
 		if(target==-1 || shooter==this.id)
 			return;
@@ -361,28 +400,27 @@ public class Player extends gunslinger.sim.Player
 		if(isEnemy(shooter) && prevRound[target]==-1 && alive[shooter] && alive[target])
 			priorityList.add(new PriorityTuple(shooter, SEC_PRI));
 		
+		//(similar to above case) when enemy shoots someone, whose target it now dead
+		if(isEnemy(shooter) && prevRound[shooter]!=-1 && prevRound[prevRound[shooter]]!=-1 && !alive[prevRound[prevRound[shooter]]] && alive[shooter] && alive[prevRound[shooter]])
+			priorityList.add(new PriorityTuple(shooter, SEC_PRI));
+			
+		
 		//Think more about the following two
-		//friend is shot by someone when he doesn shoot
+		//friend is shot by someone when he doesn't shoot
 		if(isFriend(target) && prevRound[target]==-1 && alive[target] && alive[shooter])
 		{
-			if(isEnemy(shooter))
-				priorityList.add(new PriorityTuple(shooter, SEC_PRI));
-			else
-				priorityList.add(new PriorityTuple(shooter, SEC_PRI2));
+			priorityList.add(new PriorityTuple(shooter, SEC_PRI2));
 		}
 			
 		//friend shoots someone and is not shot by anyone
 		if(isFriend(shooter) && !shotAt[shooter] && alive[target])
 		{
-			if(isEnemy(target))
-				priorityList.add(new PriorityTuple(target, SEC_PRI));
-			else
-				priorityList.add(new PriorityTuple(target, SEC_PRI2));
+			priorityList.add(new PriorityTuple(target, SEC_PRI2));
 		}
 		
 		//Lower priority stuff
 		//f -> e
-		if(isFriend(shooter)&&isEnemy(target)&&alive[target])
+		if(isFriend(shooter)&&isEnemy(target)&&alive[target]&&alive[shooter])
     	{
     		priorityList.add(new PriorityTuple(target, F2E));
     	}
@@ -504,8 +542,12 @@ public class Player extends gunslinger.sim.Player
     private int NEUTRAL_CASES=50;
     
     private double CONS_PROB=1;
-    private double RETAL_PROB=1;
+    private double RETAL_PROB=1.5;
     private double SHOOT_AGAIN_PROB=0.5;
+    private double SHOOT_AGAIN_PROB_REVERSE=0.3;
     private double THRESHOLD=2;
+    
+    private int ENDGAME_MIN_ALIVE_FRIENDS=1;
+    private int PASSIVE_ACTIVE=2;
     
 }

@@ -207,8 +207,7 @@ public class Player extends gunslinger.sim.Player
     {
     	double enemyFactor = nEnemies * shootFirstEnemiesFactor;
     	double friendFactor = nFriends * shootFirstFriendsFactor;
-	return true;
-        // return enemyFactor < nplayers || friendFactor > nplayers;
+    	return enemyFactor < nplayers || friendFactor > nplayers;
     }
     
     public List<Integer> shotAtLastRound(int[] prevRound, boolean[] alive) {

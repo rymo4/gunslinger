@@ -17,7 +17,7 @@ public class ConstantsGenerator {
 	    i /= 3;
 	    sb.insert(0, Integer.toString(digit));
 	}
-	while (sb.length() < 4) {
+	while (sb.length() < 9) {
 	    sb.insert(0, "0");
 	}
 	return sb.toString();

@@ -1,4 +1,4 @@
-//Deliverable3 9/17
+//Deliverable4 9/21
 package gunslinger.g7;
 
 public class PlayerStats 
@@ -17,6 +17,7 @@ public class PlayerStats
 	public PlayerStats(int numPlayers)
 	{
 		probDie = 0;
+		//shotUs = false;
 		probThreat = 0;
 		alive = true;
 		numShotFriends = 0;
@@ -47,6 +48,13 @@ public class PlayerStats
 				shotAliveFriend=true;
 		}
 		return shotAliveFriend;
+	}
+    public boolean getShotAlivePlayer(int p, boolean a[])
+	{
+		boolean shotAlivePlayer = false;
+		if (p>0 && a[p])
+			shotAliveFriend=true;
+		return shotAlivePlayer;
 	}
 	public int getNumShotFriends(int f[])				
 	{

@@ -4,7 +4,6 @@ import java.util.*;
 
 // An example player
 // Extends gunslinger.sim.Player to start with your player
-//
 public class Player extends gunslinger.sim.Player
 {
 	// keep track of rounds
@@ -66,6 +65,35 @@ public class Player extends gunslinger.sim.Player
 		}
 	}
 
+/*	public boolean ratio(int alive_fr, int alive_en)
+	{
+		double ratio = (1.0*alive_en - 1.0*alive_fr);
+		if (ratio > 0.0)
+			return true;
+		else
+			return false;
+	}
+*/
+	public boolean is_friend(int friend_id)
+	{
+		return friends.contains(friend_id);
+	}	
+
+	public boolean is_enemy(int enemy_id)
+	{
+		return enemies.contains(enemy_id);
+	}
+
+	public boolean is_neutral(int neutral_id)
+	{
+		return (!friends.contains(neutral_id) && !enemies.contains(neutral_id));
+	}	
+
+	public boolean is_alive(int player_id, boolean[] alive)
+	{
+		return alive[player_id];
+	}
+
 	// Update consistency matrix after every round
 	public void updateConsistency(int[] prevRound, int[][] history, int currentRound)
 	{
@@ -99,9 +127,9 @@ public class Player extends gunslinger.sim.Player
 		}
 	}
 
+	// Print consistencies
 	public void printConsistency()
 	{
-		System.out.println("---------------- Printing Consistencies ----------------");
 		for (int i=0 ; i<nplayers ; i++)
 		{
 			for (int j=0 ; j<nplayers ; j++)
@@ -139,245 +167,238 @@ public class Player extends gunslinger.sim.Player
 		round++;	
 		System.out.println("Players: " + nplayers);
 
-		/* Strategy used by the dumb player:
-		   Decide whether to shoot or not with a fixed shoot rate
-		   If decided to shoot, randomly pick one alive that is not your friend */
 		int alive_friends = 0;
 		int alive_players = 0;
 		int alive_enemies = 0;
 		ArrayList<Integer> current_alive_friends = new ArrayList<Integer>();
 		ArrayList<Integer> current_alive_enemies = new ArrayList<Integer>();
-		HashMap<Integer, Integer> current_alive_enemy_score = new HashMap<Integer, Integer>();
 
-		// Remove DEAD enemies from my "turned" enemy list
-		for (int i = 0; i<nplayers; i++)
-		{			
-			if (!alive[i] && (current_alive_turned_enemies.contains(i)))
-			{
-				current_alive_turned_enemies.remove(new Integer(i));
-			}
-		}
-
-		// Shoot or not in this round?
-		// Populating current alive players
-		// Populating current alive friends
-		// Populating current alive enemies
-		for (int i=0 ; i<nplayers ; i++)
-		{
-			if (alive[i])
-			{
-				alive_players++;
-				if (friends.contains(i))
+		try{
+			// Remove DEAD enemies from my NEUTRAL-TURNED-ENEMY list
+			for (int i = 0; i<nplayers; i++)
+			{			
+				if (!alive[i] && (current_alive_turned_enemies.contains(i)))
 				{
-					current_alive_friends.add(i);
-					alive_friends++;					
-				}
-
-				else if (enemies.contains(i))
-				{
-					current_alive_enemies.add(i);
-					alive_enemies++;
+					current_alive_turned_enemies.remove(new Integer(i));
 				}
 			}
-		}
 
-		// Merge the two enemy lists
-		current_alive_enemies.addAll(current_alive_turned_enemies);
-
-		/*		if (current_alive_enemies.size() > 0)
-				System.out.println("--------------- Alive ENEMIES--------------------");
-
-				for (int i = 0; i < current_alive_enemies.size(); i++)
+			// Populating currently alive players, alive friends & alive enemies
+			for (int i=0 ; i<nplayers ; i++)
+			{
+				if (alive[i])
 				{
-				System.out.println("Alive enemies " + current_alive_enemies.get(i));
-				}
-		 */
-		//			return -1;
-		double initial_prob = 1.0 - ((1.0*alive_friends)/(alive_players - 1));
-		//System.out.println("Initial Prob. of g6: " + initial_prob + "\n");
+					alive_players++;
+					if (friends.contains(i))
+					{
+						current_alive_friends.add(i);
+						alive_friends++;					
+					}
 
-		if (round == 1)
-		{
-			boolean shoot = true;
-			//boolean shoot = gen.nextDouble() < ShootRate;
-			if (initial_prob > 0.5)
-			{
-				shoot = true;
-				target = enemies.get(0);
-				return target;
+					else if (enemies.contains(i))
+					{
+						current_alive_enemies.add(i);
+						alive_enemies++;
+					}
+				}
 			}
-			else
+
+			// Merge the two enemy lists
+			current_alive_enemies.addAll(current_alive_turned_enemies);
+
+			// Calculating initial probability to die
+			double initial_prob = 1.0 - ((1.0*alive_friends)/(alive_players - 1));
+
+			if (round == 1)
 			{
-				shoot = false;
 				return -1;
-			}
-		}
+				/*(			boolean shoot = true;
 
-		else
-		{	
-			// Add previous round to History
-			for (int i = 0; i < nplayers ; i++)
-			{
-				history[round-1][i] = prevRound[i];
-			}
+				  if (initial_prob > 0.5)
+				  {
+				  shoot = true;
+				  target = enemies.get(0);
+				  return target;
+				  }
+				  else
+				  {
+				  shoot = false;
+				  return -1;
+				  }
+				 */		}
 
-			updateConsistency(prevRound, history, round);
-//			printConsistency();
-
-			// I AM SHOT
-			// Make my shooter my prime target
-			for (int i=0 ; i < nplayers ; i++)
-			{
-				// If someone shoots me
-				if (prevRound[i] == id)
+			else
+			{	
+				// Add previous round to History
+				for (int i = 0; i < nplayers ; i++)
 				{
-					// If I am in the middle of a directed flow A->"B"->C
-					// Trying to be consistent and hoping friends (if any) will help
-					if (alive[i] && prevRound[id]!=-1 && alive[prevRound[id]] && prevRound[id]!=i && alive_friends > 1)
-					{
-//						System.out.println("--------------HITTING X  - directed flow SHOT Moi-----------------");
-						target = prevRound[id];
-						return target;
-					}
+					history[round-1][i] = prevRound[i];
 				}
-			}
 
-			for (int i=0 ; i < nplayers ; i++)
-			{
-				// If someone shoots me
-				if (prevRound[i] == id)
+				updateConsistency(prevRound, history, round);
+
+				// I AM SHOT
+				// Make my shooter my prime target
+				for (int i=0 ; i < nplayers ; i++)
 				{
-					// If shooter is an enemy and he is alive
-					if (alive[i] && enemies.contains(i))
+					// If someone shoots me
+					if (i!= id && prevRound[i] == id)
 					{
-//						System.out.println("--------------HITTING enemy  - enemy SHOT Moi-----------------");
-						target = i;
-						return target;
-					}
-				}
-			}
-
-			for (int i=0 ; i < nplayers ; i++)
-			{
-				// If someone shoots me
-				if (prevRound[i] == id)
-				{	
-					// If shooter is a neutral person and he is alive
-					if (alive[i] && !friends.contains(i) && !enemies.contains(i))
-					{
-						target = i;
-						// If not a turned enemy
-						if(!current_alive_turned_enemies.contains(i))
+						// If I am in the middle of a directed flow A->"B"->C
+						// Trying to be consistent and hoping friends (if any) will help
+						if (alive[i] && prevRound[id]!=-1 && alive[prevRound[id]] && prevRound[id]!=i && alive_friends > 1)
 						{
-							// Add current hitter to my enemy list
-							current_alive_turned_enemies.add(i);
+							target = prevRound[id];
+							return target;
 						}
-//						System.out.println("--------------HITTING turned  - turned SHOT Moi-----------------");
-						return target;
 					}
 				}
-			}
 
-			for (int i=0 ; i < nplayers ; i++)
-			{
-				// If someone shoots me
-				if (prevRound[i] == id)
-				{	
-					// If shooter is a friend and he is alive
-					if (alive[i] && friends.contains(i))
+				for (int i=0 ; i < nplayers ; i++)
+				{
+					// If someone shoots me
+					if (i!=id && prevRound[i] == id)
 					{
-						// Check consistency of the friend hitting me
-						// If consistency very high, shoot the friend
-						if (consistency[i][id] > FRIEND_HITTING_ME)
+						// If shooter is an enemy and he is alive
+						if (alive[i] && enemies.contains(i))
 						{
-//							System.out.println("--------------HITTING friend  - friend SHOT Moi-----------------");
 							target = i;
 							return target;
 						}
 					}
 				}
-			}
 
-			// I WAS NOT SHOT
-			// Can decide what to do next
-			// If 3 Players or less are left
-			if (alive_players <= 3)
-			{
-				for (int i=0 ; i<nplayers ; i++)
+				for (int i=0 ; i < nplayers ; i++)
 				{
-					for (int j=0 ; j<nplayers ; j++)
-					{
-						if (i!=id && j!=id && alive[i] && alive[j] && prevRound[i] == j && initial_prob < INITIAL_PROB)
+					// If someone shoots me
+					if (i!=id && prevRound[i] == id)
+					{	
+						// If shooter is a neutral person and he is alive
+						if (alive[i] && !friends.contains(i) && !enemies.contains(i))
 						{
-							if (!friends.contains(i))
+							target = i;
+							// If not a turned enemy
+							if(!current_alive_turned_enemies.contains(i))
 							{
-//								System.out.println("--------------3 players - 1-----------------");
-								target = i;
-								return target;
+								// Add current hitter to my enemy list
+								current_alive_turned_enemies.add(i);
 							}
-							else if (!friends.contains(j))
-							{
-//								System.out.println("--------------3 players  - 2-----------------");
-								target = j;
-								return target;
-							}
-
-						}
-
-						if (i!=id && j!=id && alive[i] && alive[j] && prevRound[j] == i && initial_prob < INITIAL_PROB)
-						{
-							if (!friends.contains(j))
-							{
-//								System.out.println("-------------- 3 players - 3-----------------");
-								target = j;
-								return target;
-							}
-							else if (!friends.contains(i))
-							{
-//								System.out.println("-------------- 3 players - 4-----------------");
-								target = i;
-								return target;
-							}	
+							return target;
 						}
 					}
 				}
-			}
 
-			// If more than 3 are left
-			for (int i=0 ; i < nplayers ; i++)
-			{
-				for (int p = 0; p < nplayers ; p++)
+				for (int i=0 ; i < nplayers ; i++)
 				{
-					// If enemy/neutral shoots a friend
-					// HELPING THE FRIEND
-					if (alive[i] && alive[p] && !friends.contains(i) && friends.contains(p) && prevRound[i] == p)
+					// If someone shoots me
+					if (i!=id && prevRound[i] == id)
+					{	
+						// If shooter is a friend and he is alive
+						if (alive[i] && friends.contains(i))
+						{
+							// Check consistency of the friend hitting me
+							// If consistency very high, shoot the friend
+							if (consistency[i][id] > FRIEND_HITTING_ME)
+							{
+								target = i;
+								return target;
+							}
+						}
+					}
+				}
+
+				// I WAS NOT SHOT
+				// Can decide what to do next
+				// If 3 Players or less are left
+				if (alive_players <= 3)
+				{
+					for (int i=0 ; i<nplayers ; i++)
 					{
-//						System.out.println("--------------Helping friend - X SHOT FRiend-----------------");
-//						if (averageConsistency(p) > FRIEND_HITTING_NONFRIEND && initial_prob < INITIAL_PROB)
-//						{
+						for (int j=0 ; j<nplayers ; j++)
+						{
+							if (i!=id && j!=id && alive[i] && alive[j] && prevRound[i] == j && initial_prob < INITIAL_PROB)
+							{
+								if (!friends.contains(i))
+								{
+									target = i;
+									return target;
+								}
+								else if (!friends.contains(j))
+								{
+									target = j;
+									return target;
+								}
+
+							}
+
+							if (i!=id && j!=id && alive[i] && alive[j] && prevRound[j] == i && initial_prob < INITIAL_PROB)
+							{
+								if (!friends.contains(j))
+								{
+									target = j;
+									return target;
+								}
+								else if (!friends.contains(i))
+								{
+									target = i;
+									return target;
+								}	
+							}
+						}
+					}
+				}
+
+				// If more than 3 are left
+				for (int i=0 ; i < nplayers ; i++)
+				{
+					for (int p = 0; p < nplayers ; p++)
+					{
+						// If enemy/neutral shoots a friend
+						// HELPING THE FRIEND
+						if (i!=id && p!=id && alive[i] && alive[p] && !friends.contains(i) && friends.contains(p) && prevRound[i] == p)
+						{
 							target = i;
 							return target;
-//						}
+						}
 					}
 				}
-			}
 
-			for (int i=0 ; i < nplayers ; i++)
-			{
-				for (int p = 0; p < nplayers ; p++)
+				for (int i=0 ; i < nplayers ; i++)
 				{
-					// If someone shoots enemy
-					// HELPING SOMEONE ELIMINATE OUR ENEMY
-					if (alive[i] && alive[p] && enemies.contains(p) && prevRound[i] == p && initial_prob < INITIAL_PROB)
+					for (int p = 0; p < nplayers ; p++)
 					{
-						// Friend shoots enemy
-						if (friends.contains(i))
+						// If someone shoots enemy
+						// HELPING SOMEONE ELIMINATE OUR ENEMY
+						if (i!=id && p!=id && alive[i] && alive[p] && enemies.contains(p) && prevRound[i] == p && initial_prob < INITIAL_PROB)
+						{
+							// Friend shoots enemy
+							if (friends.contains(i))
+							{
+								for (int e = 0 ; e < nplayers ; e++)
+								{
+									if (prevRound[e] != i )//&& averageConsistency(i) > FRIEND_HITTING_ENEMY)
+									{
+										target = p;
+										return target;
+									}
+								}
+							}
+						}
+					}
+				}
+
+				for (int i=0 ; i < nplayers ; i++)
+				{
+					for (int p = 0; p < nplayers ; p++)
+					{
+						// Neutral shoots enemy
+						if (i!=id && p!=id && alive[i] && !friends.contains(i) && !enemies.contains(i) && enemies.contains(p))
 						{
 							for (int e = 0 ; e < nplayers ; e++)
 							{
-								if (prevRound[e] != i )//&& averageConsistency(i) > FRIEND_HITTING_ENEMY)
+								// Help the neutral in case the neural has not been shot
+								if (e!=id && alive[p] && prevRound[e] != i && averageConsistency(i) > NEUTRAL_HITTING_ENEMY && initial_prob < INITIAL_PROB)
 								{
-//									System.out.println("--------------HELPING FRIEND - FRIEND SHOT ENEMY-----------------");
 									target = p;
 									return target;
 								}
@@ -385,86 +406,35 @@ public class Player extends gunslinger.sim.Player
 						}
 					}
 				}
-			}
 
-			for (int i=0 ; i < nplayers ; i++)
-			{
-				for (int p = 0; p < nplayers ; p++)
+
+				for (int i=0 ; i < nplayers ; i++)
 				{
-					// Neutral shoots enemy
-					if (alive[i] && !friends.contains(i) && !enemies.contains(i) && enemies.contains(p))
-					{
-						for (int e = 0 ; e < nplayers ; e++)
+					for (int p = 0; p < nplayers ; p++)
+					{	
+						// If enemy shoots an enemy
+						if (i!=id && p!=id && alive[i] && alive[p] && enemies.contains(i) && enemies.contains(p) && prevRound[i] == p && initial_prob < INITIAL_PROB)
 						{
-							// Help the neutral in case the neural has not been shot
-							if (alive[p] && prevRound[e] != i && averageConsistency(i) > NEUTRAL_HITTING_ENEMY && initial_prob < INITIAL_PROB)
-							{
-//								System.out.println("--------------HELPING N - N SHOT ENEMY-----------------");
-								target = p;
-								return target;
-							}
+							target = i;
+							return target;
 						}
-					}
+					}	
 				}
-			}
 
-			// If friend shoots a friend
-			/*if (friends.contains(i) && friends.contains(p) && prevRound[i] == p && alive[i] == true)
-			  {
-			  double consistency_shooter = 0.0;
-			  double consistency_victim = 0.0;
-			// Check for consistency of friend hitting another friend
-			for (int f = 0; f < alive.length; f++){
-			if (friends.contains(f) && consistency[i][f] > 0)
-			{
-			consistency_shooter += consistency[i][f];
+				// Pick first target and shoot
+//				if (current_alive_enemies.size()>0 && alive_friends>0 && initial_prob < INITIAL_PROB)
+//				{
+//					target = current_alive_enemies.get(0);
+//					return target;
+//				}
 			}
-			if (friends.contains(f) && consistency[p][f] > 0)
-			{
-			consistency_victim += consistency[p][f];
-			}
-			}
-
-			if (consistency_victim > consistency_shooter)
-			{
-			target = p;
-			System.out.println(i + " Friend shot my friend " + p + " Support victim ");
-			return target;
-			}
-			else if (consistency_victim < consistency_shooter)
-			{
-			target = i;
-			System.out.println(i + " Friend shot my friend " + p + " Support shooter");
-			return target;
-			}
-			System.out.println(i + " Friend didn't shoot my friend " + p);
-			}*/
-			for (int i=0 ; i < nplayers ; i++)
-			{
-				for (int p = 0; p < nplayers ; p++)
-				{	
-					// If enemy shoots an enemy
-					if (alive[i] && alive[p] && enemies.contains(i) && enemies.contains(p) && prevRound[i] == p && initial_prob < INITIAL_PROB)
-					{
-//						System.out.println("--------------HITTING ENEMY - ENEMY SHOT ENEMY-----------------");
-						// TO DO: Use consistency in later versions
-						target = i;
-						return target;
-					}
-				}	
-			}
-
-			// Pick first target and shoot
-			//int target = current_alive_enemies.get(gen.nextInt(current_alive_enemies.size()));
-			if (current_alive_enemies.size()>0 && alive_friends>0)
-			{
-//				System.out.println("--------------HITTING ENEMY FIRST IN LIST - LAST SCENARIO-----------------");
-				target = current_alive_enemies.get(0);
-				return target;
-			}
+			
+			return -1;
 		}
-
-		return -1;
+		catch(Exception e)
+		{
+			return -1;
+		}		
 	}
 
 	private Random gen;
