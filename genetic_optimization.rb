@@ -88,6 +88,9 @@ eval_f = lambda { |gene_values|
   Gunslinger.avgScoreWithCoeffs(gene_values.to_java :float)
 }
 
+puts eval_f.call([-1.1999999999999993, 2.0, -6.0, 6.0, 2.0, 2.0, 2.0])
+
+exit
 
 # Make base population
 pop = []
@@ -103,8 +106,8 @@ NUM_ITERATIONS.times do |n|
 
   pop.sort! { |a,b| -a.fitness <=> -b.fitness }
   # print top three solutions
-  puts pop[0..5].map(&:genes).inspect
-  puts pop[0..5].map(&:fitness).inspect
+  puts pop.map(&:genes).inspect
+  puts pop.map(&:fitness).inspect
   # Take NUM_ELITES best from pop
   pop_1 = pop[0..NUM_ELITES-1]
 
