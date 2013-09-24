@@ -70,7 +70,7 @@ public class Relationship {
 		}
 		
 		//enemy inference
-		for (int i = 0; i < n; i++) 
+		for (int i = 0; i < n; i++)
 		if(prevRound[i]>=0){
 			int j=prevRound[i];
 			if (!fixed[i][j]){

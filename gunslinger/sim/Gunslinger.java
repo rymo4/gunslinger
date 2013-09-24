@@ -792,7 +792,6 @@ public class Gunslinger
             }
         }
             
-        if (verbose)
  
         // update game stats
         for (int p = 0; p != nplayers; ++p) {

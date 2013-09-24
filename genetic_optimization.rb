@@ -69,28 +69,25 @@ class Chromosome
 
 end
 
-POPULATION_SIZE = 10
+POPULATION_SIZE = 12
 RESOLUTION = 5
-NUM_ITERATIONS = 3
-NUM_ELITES = 4
+NUM_ITERATIONS = 6
+NUM_ELITES = 6
 
 features = [
-  {name: "friend", min: -10, max: 1},
-  {name: "shot", min: -10, max: 10},
-  {name: "foe", min: -10, max: 10},
-  {name: "friends_foe", min: -10, max: 10},
-  {name: "enemy", min: -10, max: 10},
-  {name: "none", min: -10, max: 10},
-  {name: "retaliation", min: -10, max: 10}
+  {name: "friend", min: -10, max: 0},
+  {name: "shot", min: -1, max: 10},
+  {name: "foe", min: -1, max: 10},
+  {name: "friends_foe", min: -1, max: 10},
+  {name: "enemy", min: 0, max: 10},
+  {name: "none", min: -10, max: 0},
+  {name: "retaliation", min: 6, max: 10}
 ]
 
 eval_f = lambda { |gene_values|
   Gunslinger.avgScoreWithCoeffs(gene_values.to_java :float)
 }
 
-puts eval_f.call([-1.1999999999999993, 2.0, -6.0, 6.0, 2.0, 2.0, 2.0])
-
-exit
 
 # Make base population
 pop = []

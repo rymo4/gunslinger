@@ -53,11 +53,7 @@ public class AiPlayer {
 
       attrs  = new int[]{ 0, 0, 0, 0, 0, 0, 0};
 
-      //coeffs = new float[]{6.0f, 6.0f, -10.0f, -2.0f, 6.0f, 6.0f, -10.0f};
-      //coeffs = new float[]{8.8f, 10.0f, -8.0f, -4.0f, 10.0f, 2.0f, -2.0f};
-
-      //-1.1999999999999993, 2.0, -6.0, 6.0, 2.0, 2.0, -2.0]
-      coeffs = new float[]{ -10f, 2.0f, 6f, 4f, 3f, -2.6f, 3.0f};
+      coeffs = new float[]{-10f, 5.6f, 1.2f, 1.2f, 5.6f, -2.8f, 10.0f};
 
       enemies = new boolean[n];
       friends = new boolean[n];
