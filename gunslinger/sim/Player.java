@@ -7,7 +7,7 @@ package gunslinger.sim;
 public abstract class Player
 {
     // player's index in the playerlist file
-    static int globalIndex = 0;    
+    static int globalIndex = 0;
     final int index;
 
     // player's id in each game
@@ -23,10 +23,13 @@ public abstract class Player
     // name of group
     //
     public abstract String name();
-    
+
     // Initialize the player
     //
     public abstract void init(int nplayers, int[] friends, int enemies[]);
+
+    // static typing hax
+    public void init(int nplayers, int[] friends, int enemies[], float[] coeffs){};
 
     // Pick a target to shoot
     // Parameters:
