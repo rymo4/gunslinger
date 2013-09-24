@@ -29,6 +29,20 @@ public class AiPlayer {
   public int[] attrs;
   public float[] coeffs;
 
+  public AiPlayer(int n, int e, int f, float[] cs){
+      me = false;
+      dead = false;
+
+      max_e = e;
+      max_f = f;
+
+      attrs  = new int[]{ 0, 0, 0, 0, 0, 0, 0};
+      coeffs = cs;
+
+      enemies = new boolean[n];
+      friends = new boolean[n];
+  }
+
   public AiPlayer(int n, int e, int f)
   {
       me = false;
@@ -38,6 +52,10 @@ public class AiPlayer {
       max_f = f;
 
       attrs  = new int[]{ 0, 0, 0, 0, 0, 0, 0};
+
+      //coeffs = new float[]{6.0f, 6.0f, -10.0f, -2.0f, 6.0f, 6.0f, -10.0f};
+      //coeffs = new float[]{8.8f, 10.0f, -8.0f, -4.0f, 10.0f, 2.0f, -2.0f};
+
       coeffs = new float[]{ -10f, 2.0f, 6f, 4f, 3f, -2.6f, 3.0f};
 
       enemies = new boolean[n];

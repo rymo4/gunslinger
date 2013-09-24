@@ -47,7 +47,6 @@ public class Player extends gunslinger.sim.Player
     	if (prevRound == null)
     	{
     		//First Round Strategy -> wait do nothing
-    		System.err.println("[ME] First Round, I am " + id + " waiting...");
     	}
     	else
     	{

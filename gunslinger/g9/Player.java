@@ -210,7 +210,6 @@ public class Player extends gunslinger.sim.Player
             }
         }
 
-        System.out.println("--------------");
 
         this.calculatePriority(prevRound, alive);
 
@@ -237,14 +236,10 @@ public class Player extends gunslinger.sim.Player
     }
 
     public void print_priority() {
-        System.out.println("Priority for round " + roundNumber);
 
         for (int i=0; i<nplayers; i++) {
-            System.out.print(priority[i] + " ");
         }
 
-        System.out.println();
-        System.out.println();
     }
 
 

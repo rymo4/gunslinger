@@ -53,7 +53,6 @@ public class Player extends gunslinger.sim.Player
 			{
 				if(prevRound[i] == enemies[j]) //If one of the remaining players shot an enemy in equilibrium
 				{
-					System.out.println("[PLAYER3]: Shooting player " + enemies[j] + " who was shot by player " + i + ".");
 					return enemies[j]; //Shoot the enemy being shot at in equilibrium
 				}
 			}
@@ -91,7 +90,6 @@ public class Player extends gunslinger.sim.Player
 
     	if (prevRound == null) //First Round Strategy -> wait do nothing
     	{
-    		System.err.println("[PLAYER3] First Round, I am id: " + id + " waiting...");
     	}
     	else
     	{
@@ -105,7 +103,6 @@ public class Player extends gunslinger.sim.Player
 
 			if(equilibrium(prevRound, alive)) //If the game is in equilibrium, implement the end game strategy
 			{
-				System.err.println("[PLAYER3] The game is in equilibrium. Implementing end game strategy.");
 				return endGame(prevRound, alive);
 			}
 			//Priority 1: Shoot person you shot at before if they are not dead

@@ -1,3 +1,6 @@
+require 'rubygems'
+require 'java'
+include_class 'gunslinger.sim.Gunslinger'
 
 class Chromosome
   attr_accessor :genes
@@ -5,6 +8,7 @@ class Chromosome
   MUTATION_P = 0.8
 
   def initialize genes, features, eval_f, res, step_sizes
+    @features = features
     @eval_f = eval_f
     @genes = genes
     @res = res
@@ -54,29 +58,36 @@ class Chromosome
         else
           @genes[i] = g - @step_sizes[i]
         end
-      else
-        @genes[i] = g
+        if @genes[i] < @features[i][:min]
+          @genes[i] = @features[i][:min]
+        elsif @genes[i] > @features[i][:max]
+          @genes[i] = @features[i][:max]
+        end
       end
     end
   end
 
 end
 
-POPULATION_SIZE = 100
-RESOLUTION = 100
-NUM_ITERATIONS = 500
-NUM_ELITES = 20
+POPULATION_SIZE = 10
+RESOLUTION = 5
+NUM_ITERATIONS = 3
+NUM_ELITES = 4
 
 features = [
-  {name: "friend", min: -10, max: 10},
+  {name: "friend", min: -10, max: 1},
+  {name: "shot", min: -10, max: 10},
+  {name: "foe", min: -10, max: 10},
+  {name: "friends_foe", min: -10, max: 10},
   {name: "enemy", min: -10, max: 10},
-  {name: "foe", min: -10, max: 10}
+  {name: "none", min: -10, max: 10},
+  {name: "retaliation", min: -10, max: 10}
 ]
 
 eval_f = lambda { |gene_values|
-  # normally run java code that runs 1000 games with these coefficients
-  rand
+  Gunslinger.avgScoreWithCoeffs(gene_values.to_java :float)
 }
+
 
 # Make base population
 pop = []
@@ -85,10 +96,15 @@ POPULATION_SIZE.times do |n|
 end
 
 NUM_ITERATIONS.times do |n|
+  puts "Iteration #{n+1}/#{NUM_ITERATIONS}"
+
+  # compute across many threads and cache result
+  #pop.threach(4) { |p| p.fitness }
+
   pop.sort! { |a,b| -a.fitness <=> -b.fitness }
   # print top three solutions
-  puts pop[0..3].map(&:genes).inspect
-  puts pop[0..3].map(&:fitness).inspect
+  puts pop[0..5].map(&:genes).inspect
+  puts pop[0..5].map(&:fitness).inspect
   # Take NUM_ELITES best from pop
   pop_1 = pop[0..NUM_ELITES-1]
 
