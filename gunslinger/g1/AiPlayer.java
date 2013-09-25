@@ -38,7 +38,7 @@ public class AiPlayer {
       max_e = e;
       max_f = f;
 
-      attrs  = new float[]{ 0, 0, 0, 0, 0, 0, 0};
+      attrs  = new float[]{ 0, 0, 0, 0, 0, 0, 0, 0};
       coeffs = cs;
 
       enemies = new boolean[n];
