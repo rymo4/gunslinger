@@ -57,7 +57,7 @@ public class Player extends gunslinger.sim.Player
         } else if (numAliveFriends() < numAliveEnemies()) {
             this.configuration = this.MoreEnemies;
         } else {
-            this.configuration = this.SameOfEach;
+            this.configuration = this.Standard;
         }
 
         this.calculatePriority(prevRound, alive);
@@ -94,13 +94,11 @@ public class Player extends gunslinger.sim.Player
 
             // Shooting an enemy who shot someone, we are banking on the victim retaliating on that enemy
             if (isEnemy(shooter)) {
-                // System.out.println("shooting enemy");
                 priority[shooter] += configuration.get("SHOOTING_ENEMY_SHOT_SOMEONE");
             }
 
             // Shooting an enemy that has constantly been shot, and the shooter has not been shot in the previous round
             if (whoHasShot(shooter) != -1 && constShoot[shooter][victim] && isEnemy(victim)) {
-                // System.out.println("shooting constant enemy");
                 priority[victim] += configuration.get("SHOOTING_ENEMY_WHO_IS_CONSTANTLY_SHOT");
             }
 
@@ -111,7 +109,6 @@ public class Player extends gunslinger.sim.Player
             if (whoHasShot(whoShotMe) != -1) {
                 int whoShotWhoShotMe = whoHasShot(whoShotMe);
                 if (validTarget(whoShotWhoShotMe) && whoHasShot(whoShotWhoShotMe) == -1) {
-                    // System.out.println("weird case");
                     if (isEnemy(whoShotMe)) {
                         priority[whoShotMe] += configuration.get("RETALIATING_AGAINST_ENEMY_SHOOTER");
                     } else if (isNeutral(whoShotMe)) {
@@ -124,7 +121,6 @@ public class Player extends gunslinger.sim.Player
         // If any of our friends have been shot, then retaliate
         for (int j = 0; j < nplayers; j++) {
             if (alive[j] && isFriend(j) && whoHasShot(j) != -1) {
-                // System.out.println("helping friend");
                 int whoShotFriend = whoHasShot(j);
                 if (alive[whoShotFriend]) {
                     if (isEnemy(whoShotFriend)) {
@@ -137,18 +133,13 @@ public class Player extends gunslinger.sim.Player
         }
 
         // Helping our friend shoot someone they are constantly shooting
-
-        // may not need below condition
-        if (numAliveEnemies() < numAliveFriends()) {
-            for (int i = 0; i < nplayers; i++) {
-                for (int j = 0; j < nplayers; j++) {
-                    if (alive[i] && isFriend(i) && constShoot[i][j] && !isFriend(j)) {
-                        priority[j] += configuration.get("HELP_FRIEND_CONSTANT_SHOOT");
-                    }
+        for (int i = 0; i < nplayers; i++) {
+            for (int j = 0; j < nplayers; j++) {
+                if (alive[i] && isFriend(i) && constShoot[i][j] && !isFriend(j)) {
+                    priority[j] += configuration.get("HELP_FRIEND_CONSTANT_SHOOT");
                 }
             }
         }
-
 
         for (int i = 0 ; i < nplayers ; i++) {
             for (int j = 0; j < nplayers ; j++) {
@@ -170,6 +161,8 @@ public class Player extends gunslinger.sim.Player
         Vector<Integer> aliveNeutrals = new Vector<Integer>();
 
         for (int i=0; i<alive.length; i++) {
+            if (prevRound[i] == id)
+                return i;
             if (alive[i] && i != id) {
                 if (isEnemy(i)) {
                     aliveEnemies.add(new Integer(i));
@@ -189,20 +182,16 @@ public class Player extends gunslinger.sim.Player
             return aliveNeutrals.get(0);
 
         if (aliveFriends.size() == 1 && aliveEnemies.size() == 1) {
-            int f = aliveFriends.get(0);
             int e = aliveEnemies.get(0);
-            if (shootRecord[f][e] > 0)
-                return e;
-            else
-                return -1;
+            return e;
         }
 
         if (aliveNeutrals.size() == 2) {
             int n1 = aliveNeutrals.get(0);
             int n2 = aliveNeutrals.get(1);
 
-            if (prevRound[n1] == n2) return n2;
-            if (prevRound[n2] == n1) return n1;
+            if (prevRound[n1] == n2) return n1;
+            if (prevRound[n2] == n1) return n2;
             return -1;
         }
 
@@ -210,8 +199,8 @@ public class Player extends gunslinger.sim.Player
             int e1 = aliveEnemies.get(0);
             int e2 = aliveEnemies.get(1);
 
-            if (prevRound[e1] == e2) return e2;
-            if (prevRound[e2] == e1) return e1;
+            if (prevRound[e1] == e2) return e1;
+            if (prevRound[e2] == e1) return e2;
             return -1;
         }
 
@@ -343,14 +332,14 @@ public class Player extends gunslinger.sim.Player
     static
     {
         MoreFriends = new HashMap<String, Integer>();
-        MoreFriends.put("SHOOTING_ENEMY_SHOT_SOMEONE", 10);
-        MoreFriends.put("SHOOTING_ENEMY_WHO_IS_CONSTANTLY_SHOT", 10);
-        MoreFriends.put("RETALIATING_AGAINST_ENEMY_SHOOTER", 9);
-        MoreFriends.put("RETALIATING_AGAINST_NEUTRAL_SHOOTER", 8);
-        MoreFriends.put("HELP_FRIEND_RETALIATE_AGAINST_ENEMY", 6);
+        MoreFriends.put("SHOOTING_ENEMY_SHOT_SOMEONE", 3);
+        MoreFriends.put("SHOOTING_ENEMY_WHO_IS_CONSTANTLY_SHOT", 3);
+        MoreFriends.put("RETALIATING_AGAINST_ENEMY_SHOOTER", 8);
+        MoreFriends.put("RETALIATING_AGAINST_NEUTRAL_SHOOTER", 7);
+        MoreFriends.put("HELP_FRIEND_RETALIATE_AGAINST_ENEMY", 20);
         MoreFriends.put("HELP_FRIEND_RETALIATE_AGAINST_NEUTRAL", 5);
-        MoreFriends.put("HELP_FRIEND_CONSTANT_SHOOT", 5);
-        MoreFriends.put("FRIEND_HELPING_US_SHOOT_ENEMY", 100);
+        MoreFriends.put("HELP_FRIEND_CONSTANT_SHOOT", 6);
+        MoreFriends.put("FRIEND_HELPING_US_SHOOT_ENEMY", 20);
     }
 
     private static final Map<String, Integer> MoreEnemies;
@@ -358,27 +347,26 @@ public class Player extends gunslinger.sim.Player
     {
         MoreEnemies = new HashMap<String, Integer>();
         MoreEnemies.put("SHOOTING_ENEMY_SHOT_SOMEONE", 10);
-        MoreEnemies.put("SHOOTING_ENEMY_WHO_IS_CONSTANTLY_SHOT", 10);
+        MoreEnemies.put("SHOOTING_ENEMY_WHO_IS_CONSTANTLY_SHOT", 6);
         MoreEnemies.put("RETALIATING_AGAINST_ENEMY_SHOOTER", 9);
         MoreEnemies.put("RETALIATING_AGAINST_NEUTRAL_SHOOTER", 8);
-        MoreEnemies.put("HELP_FRIEND_RETALIATE_AGAINST_ENEMY", 6);
+        MoreEnemies.put("HELP_FRIEND_RETALIATE_AGAINST_ENEMY", 9);
         MoreEnemies.put("HELP_FRIEND_RETALIATE_AGAINST_NEUTRAL", 5);
         MoreEnemies.put("HELP_FRIEND_CONSTANT_SHOOT", 5);
-        MoreEnemies.put("FRIEND_HELPING_US_SHOOT_ENEMY", 100);
+        MoreEnemies.put("FRIEND_HELPING_US_SHOOT_ENEMY", 9);
     }
 
-    private static final Map<String, Integer> SameOfEach;
+    private static final Map<String, Integer> Standard;
     static
     {
-        SameOfEach = new HashMap<String, Integer>();
-        SameOfEach.put("SHOOTING_ENEMY_SHOT_SOMEONE", 10);
-        SameOfEach.put("SHOOTING_ENEMY_WHO_IS_CONSTANTLY_SHOT", 10);
-        SameOfEach.put("RETALIATING_AGAINST_ENEMY_SHOOTER", 9);
-        SameOfEach.put("RETALIATING_AGAINST_NEUTRAL_SHOOTER", 8);
-        SameOfEach.put("HELP_FRIEND_RETALIATE_AGAINST_ENEMY", 6);
-        SameOfEach.put("HELP_FRIEND_RETALIATE_AGAINST_NEUTRAL", 5);
-        SameOfEach.put("HELP_FRIEND_CONSTANT_SHOOT", 5);
-        SameOfEach.put("FRIEND_HELPING_US_SHOOT_ENEMY", 100);
+        Standard = new HashMap<String, Integer>();
+        Standard.put("SHOOTING_ENEMY_SHOT_SOMEONE", 10);
+        Standard.put("SHOOTING_ENEMY_WHO_IS_CONSTANTLY_SHOT", 10);
+        Standard.put("RETALIATING_AGAINST_ENEMY_SHOOTER", 9);
+        Standard.put("RETALIATING_AGAINST_NEUTRAL_SHOOTER", 7);
+        Standard.put("HELP_FRIEND_RETALIATE_AGAINST_ENEMY", 8);
+        Standard.put("HELP_FRIEND_RETALIATE_AGAINST_NEUTRAL", 5);
+        Standard.put("HELP_FRIEND_CONSTANT_SHOOT", 6);
+        Standard.put("FRIEND_HELPING_US_SHOOT_ENEMY", 10);
     }
-
 }

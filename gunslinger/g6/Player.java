@@ -376,7 +376,7 @@ public class Player extends gunslinger.sim.Player
 							{
 								for (int e = 0 ; e < nplayers ; e++)
 								{
-									if (prevRound[e] != i )//&& averageConsistency(i) > FRIEND_HITTING_ENEMY)
+									if (e!=id && alive[e] && prevRound[e] != i )//&& averageConsistency(i) > FRIEND_HITTING_ENEMY)
 									{
 										target = p;
 										return target;
@@ -390,14 +390,27 @@ public class Player extends gunslinger.sim.Player
 				for (int i=0 ; i < nplayers ; i++)
 				{
 					for (int p = 0; p < nplayers ; p++)
+					{	
+						// If enemy shoots an enemy
+						if (i!=id && p!=id && alive[i] && alive[p] && enemies.contains(i) && enemies.contains(p) && prevRound[i] == p)//&& initial_prob < INITIAL_PROB)
+						{
+							target = i;
+							return target;
+						}
+					}	
+				}
+
+				for (int i=0 ; i < nplayers ; i++)
+				{
+					for (int p = 0; p < nplayers ; p++) 
 					{
 						// Neutral shoots enemy
-						if (i!=id && p!=id && alive[i] && !friends.contains(i) && !enemies.contains(i) && enemies.contains(p))
+						if (i!=id && p!=id && alive[p] && alive[i] && !friends.contains(i) && !enemies.contains(i) && enemies.contains(p) && prevRound[i] == p)
 						{
 							for (int e = 0 ; e < nplayers ; e++)
 							{
 								// Help the neutral in case the neural has not been shot
-								if (e!=id && alive[p] && prevRound[e] != i && averageConsistency(i) > NEUTRAL_HITTING_ENEMY && initial_prob < INITIAL_PROB)
+								if (e!=id && alive[e] && prevRound[e] != i && averageConsistency(i) > NEUTRAL_HITTING_ENEMY && initial_prob < INITIAL_PROB)
 								{
 									target = p;
 									return target;
@@ -407,19 +420,6 @@ public class Player extends gunslinger.sim.Player
 					}
 				}
 
-
-				for (int i=0 ; i < nplayers ; i++)
-				{
-					for (int p = 0; p < nplayers ; p++)
-					{	
-						// If enemy shoots an enemy
-						if (i!=id && p!=id && alive[i] && alive[p] && enemies.contains(i) && enemies.contains(p) && prevRound[i] == p && initial_prob < INITIAL_PROB)
-						{
-							target = i;
-							return target;
-						}
-					}	
-				}
 
 				// Pick first target and shoot
 //				if (current_alive_enemies.size()>0 && alive_friends>0 && initial_prob < INITIAL_PROB)
@@ -447,8 +447,8 @@ public class Player extends gunslinger.sim.Player
 
 	private double INITIAL_PROB = 0.5;
 	private double FRIEND_HITTING_ME = 0.6;
-	private double FRIEND_HITTING_ENEMY = 0.1;
-	private double NEUTRAL_HITTING_ENEMY = 0.3;
-	private double FRIEND_HITTING_NONFRIEND = 0.1;
-	private double ENEMY_HITTING_ME = 0.1;
+	private double FRIEND_HITTING_ENEMY = 0.4;
+	private double NEUTRAL_HITTING_ENEMY = 0.4;
+	/*private double FRIEND_HITTING_NONFRIEND = 0.1;
+	private double ENEMY_HITTING_ME = 0.1;*/
 }
