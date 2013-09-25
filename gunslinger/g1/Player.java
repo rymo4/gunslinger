@@ -19,6 +19,7 @@ public class Player extends gunslinger.sim.Player
     public int ENEMY        = 4;
     public int NONE         = 5;
     public int RETALIATION  = 6;
+    public int NUM_ENEMIES  = 7;
 
     private Random gen;
 
@@ -97,8 +98,8 @@ public class Player extends gunslinger.sim.Player
     public int shoot(int[] prevRound, boolean[] alive)
     {
         updateLists(alive);
-        updateFeatureVectors(prevRound, alive);
         relationship.update(prevRound,alive);
+        updateFeatureVectors(prevRound, alive);
 
         if (!provoked){
             return -1;
@@ -120,16 +121,20 @@ public class Player extends gunslinger.sim.Player
         }
         round++;
         return playerToShoot;
-//        if(enemies.length<nplayers/2){
-//        	return playerToShoot;
-//        }
-//        else{
-//        	if (round<=3)
-//        		return -1;
-//        	else
-//        		return playerToShoot;
-//        }
     }
+
+    private void updateNumEnemiesFeature(){
+        for (int i = 0; i < nplayers; i++){
+          float p_enemy_sum = 0f;
+          for (int j = 0; j < nplayers; j++){
+            if (j != i){
+              // i has j as enemy
+              p_enemy_sum += (float) relationship.pE(j ,i);
+            }
+          }
+          players[i].attrs[NUM_ENEMIES] = p_enemy_sum;
+        }
+    };
 
     private void updateFeatureVectors(int[] prevRound, boolean[] alive)
     {

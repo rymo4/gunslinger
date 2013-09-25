@@ -88,7 +88,6 @@ eval_f = lambda { |gene_values|
   Gunslinger.avgScoreWithCoeffs(gene_values.to_java :float)
 }
 
-
 # Make base population
 pop = []
 POPULATION_SIZE.times do |n|

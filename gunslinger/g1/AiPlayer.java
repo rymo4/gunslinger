@@ -20,6 +20,8 @@ public class AiPlayer {
   public int ENEMY        = 4;
   public int NONE         = 5;
   public int RETALIATION  = 6;
+  public int NUM_ENEMIES  = 7;
+
 
   public int max_e;
   public int max_f;
@@ -51,9 +53,9 @@ public class AiPlayer {
       max_e = e;
       max_f = f;
 
-      attrs  = new int[]{ 0, 0, 0, 0, 0, 0, 0};
+      attrs  = new int[]{ 0, 0, 0, 0, 0, 0, 0, 0};
 
-      coeffs = new float[]{-10f, 5.6f, 1.2f, 1.2f, 5.6f, -2.8f, 10.0f};
+      coeffs = new float[]{-10f, 5.6f, 1.2f, 1.2f, 5.6f, -2.8f, 10.0f, 0.5f};
 
       enemies = new boolean[n];
       friends = new boolean[n];
