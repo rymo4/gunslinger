@@ -1,4 +1,4 @@
-//Deliverable4 9/21
+//Deliverable5 9/24
 package gunslinger.g7;
 
 import java.util.*;
@@ -41,13 +41,9 @@ public class Player extends gunslinger.sim.Player
         
         if((ratioEtoP >= 0.9 && (ratioFtoP <= 0.02)) || (ratioEtoP > 0.6 && friends.length == 0)) {
         	strategy = 1;
-        	//System.out.println("strategy is " + strategy);
-        	//System.exit(1);
         }
         else if(ratioEtoP >= 0.8 && ratioFtoP <= 0.1) {
         	strategy = 2;
-        	//System.out.println("strategy is " + strategy);
-        	//System.exit(1);
         }
         else if(ratioFtoP >= 0.6 && enemies.length != 0)
         	strategy = 3;
@@ -55,7 +51,6 @@ public class Player extends gunslinger.sim.Player
         	strategy = 0;
         
         System.out.println("strategy is " + strategy);
-        //System.exit(1);
         
         playerArr = new PlayerStats[nplayers];
         for(int i=0;i<nplayers;i++)
@@ -95,14 +90,14 @@ public class Player extends gunslinger.sim.Player
     	int target=-1;
         boolean shoot=true;
         
-      //Special Case1: Many enemies, few friends
+      //Special Case1: Many enemies, few friends. Don't attack.
         if(strategy == 1) {
         	System.out.println("******************************target: " + target);
         	return target;
         }
         else if(strategy == 2) 
         {
-        	//Mimic Group3's strategy
+        	//Mimic Group3's strategy. Attack others who attack us.
         	if(round == 1) 
         	{
         		round++;
@@ -131,7 +126,7 @@ public class Player extends gunslinger.sim.Player
     		/*if (ratio>0.4)
     			shoot=false;
     		if (shoot)
-    			target=enemies[0];*/
+    			target=enemies[0];*/	
     		round++;
     		return target;
     	}
@@ -170,6 +165,8 @@ public class Player extends gunslinger.sim.Player
 							tempVar+=0.1;
 					}
 				}
+				if (prevRound[id]==i && alive[i])
+					tempVar+=0.26;
 				priorityShoot[i]=tempVar;
 			}
 			

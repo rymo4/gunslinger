@@ -20,7 +20,6 @@ import javax.swing.*;
 
 public class Gunslinger
 {
-
     // Default parameters
     private static String ROOT_DIR = "gunslinger";
     private static int DEFAULT_FRIENDS = 2;
@@ -28,7 +27,7 @@ public class Gunslinger
     private static String DEFAULT_PLAYERLIST = "players.list";
     private static int DEFAULT_GAMES = 1;
     private static int DEFAULT_TIMEOUT = 1000; // 1000 milliseconds
-    
+    public static float[] coeffs;
     // recompile .class file?
     private static boolean recompile = true;
     
@@ -43,6 +42,8 @@ public class Gunslinger
 
     // time limit per move
     private static int timeout = DEFAULT_TIMEOUT;
+
+    public static float totalAvg = 0.0f;
     
 	// list files below a certain directory
 	// can filter those having a specific extension constraint
@@ -109,38 +110,30 @@ public class Gunslinger
             // load players
             String group;
             while ((group = in.readLine()) != null) {
-                System.err.println("Group: " + group);
                 // search for compiled files
                 File classFile = new File(ROOT_DIR + sep + group + sep + "Player.class");
-                System.err.println(classFile.getAbsolutePath());
                 if (!classFile.exists() || recompile) {
                     // delete all class files
                     List <File> classFiles = directoryFiles(ROOT_DIR + sep + group, ".class");
-                    System.err.print("Deleting " + classFiles.size() + " class files...   ");
                     for (File file : classFiles)
                         file.delete();
-                    System.err.println("OK");
                     if (compiler == null) compiler = ToolProvider.getSystemJavaCompiler();
                     if (compiler == null) throw new Exception("Cannot load compiler");
                     if (fileManager == null) fileManager = compiler.getStandardFileManager(null, null, null);
                     if (fileManager == null) throw new Exception("Cannot load file manager");
                     // compile all files
                     List <File> javaFiles = directoryFiles(ROOT_DIR + sep + group, ".java");
-                    System.err.print("Compiling " + javaFiles.size() + " source files...   ");
                     Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromFiles(javaFiles);
                     boolean ok = compiler.getTask(null, fileManager, null, null, null, units).call();
                     if (!ok) throw new Exception("Compile error");
-                    System.err.println("OK");
                 }
                 // load class
-                System.err.print("Loading player class...   ");
                 String className = ROOT_DIR + "." + group + ".Player";
                 Class playerClass = loader.loadClass(className);
-                System.err.println("OK");
                 // set name of player and append on list
 
                 // add a small delay to avoid random seed collision
-                Thread.sleep(5);                
+                Thread.sleep(5);
                 Player player = (Player) playerClass.newInstance();
                 if (player == null)
                     throw new Exception("Load error");
@@ -148,17 +141,34 @@ public class Gunslinger
             }
             in.close();
         } catch (Exception e) {
-            e.printStackTrace(System.err);
             return null;
         }
 
 		return playersList.toArray(new Player[0]);
 	}
-    
+
+  public static float avgScoreWithCoeffs(float[] cs) {
+      coeffs = cs;
+      try {
+        main(new String[]
+            {"gunslinger/players.list", "4", "5", "false", "false", "false", "false", "60"});
+      } catch (Exception e) {
+      }
+      return totalAvg;
+  }
     // Gunslinger <playerlist> <num of enermies> <num of friends> <gui> <recompile> <verbose> <trace> <games> <timeout>
     //
 	public static void main(String[] args) throws Exception
-	{
+  {
+    System.out.println("plying");
+      /*if (args.length == 7){
+        float[] cs = new float[7];
+        for (int i = 0; i < 7; i++){
+            cs[i] = Float.parseFloat(args[i]);
+        }
+        System.err.println(avgScoreWithCoeffs(cs));
+        return;
+      }*/
         int games = DEFAULT_GAMES;
         int nenemies = 0, nfriends = 0;
         String playerPath = null;
@@ -209,7 +219,6 @@ public class Gunslinger
 
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("Usage: java Gunslinger <playerlist> <num of enermies> <num of friends> <gui> <recompile> <verbose> <trace> <games> <timeout>");
             System.exit(1);
         }
             
@@ -218,13 +227,11 @@ public class Gunslinger
         
         // check parameters
         if (nenemies + nfriends >= nplayers) {
-            System.err.println("[Error] Invalid parameters: e+f<N");
             System.exit(1);
         }
         
         // additional constraint
         if ((nplayers * nfriends) % 2 == 1) {
-            System.err.println("[Error] Invalid parameter: f and N cannot be odd together, no valid relationship is possible.");
             System.exit(1);
         }
 
@@ -274,12 +281,14 @@ public class Gunslinger
 
             }
 
+            totalAvg = ((float) totalScores[0]) / games;
+
             printStats(ranks, totalScores, scoreCounts, games);
 
             // Force stopping all pending threads
-            System.exit(0);
+            //System.exit(0);
         }
-    }        
+    }
 
     // shuffle the players to decide their index
     private static void shufflePlayers(Player[] players)
@@ -295,17 +304,12 @@ public class Gunslinger
 
     private void printConfig()
     {
-        // print configuration
-        System.err.println("##### Configurations #####");
-        System.err.println("# players: " + players.length);
-        System.err.println("# friends/player: " + nfriends);
-        System.err.println("# enemies/player: " + nenemies);
-        printRelationship();
     }
     
     private static void printStats(int[][] ranks, int[] totalScores,
                                    int[][] scoreCounts, int games)
-    {
+
+ {
         System.err.println("##### Tournament ranking #####");
         
         // print header
@@ -345,7 +349,6 @@ public class Gunslinger
 
 
     }
-
     // constructor
     //
     public Gunslinger(int nenemies, int nfriends, Player[] players)
@@ -383,7 +386,11 @@ public class Gunslinger
             players[p].id = hostToPlayer[p][p];
             int[] friendlocal = mapIntToPlayer(p, friendship[p]);
             int[] enemylocal = mapIntToPlayer(p, enmityship[p]);
-            players[p].init(nplayers, friendlocal, enemylocal);
+            if (p == 0){
+                players[p].init(nplayers, friendlocal, enemylocal, coeffs);
+            } else {
+                players[p].init(nplayers, friendlocal, enemylocal);
+            }
         }
 
         // initialize all players as alive
@@ -460,8 +467,8 @@ public class Gunslinger
 
             for (int i = 0; i != nplayers; ++i) {
                 double angle = offset * i;
-                double xoffset = CanvasSize * Math.sin(angle) + 10;
-                double yoffset = CanvasSize * Math.cos(angle) + 20;
+                double xoffset = CanvasSize * Math.sin(angle);
+                double yoffset = CanvasSize * Math.cos(angle);
                 xx[i] = (int)(x0 + xoffset);
                 yy[i] = (int)(y0 + yoffset);
             }
@@ -705,13 +712,6 @@ public class Gunslinger
             current[i] = -1;
 
         // print who is alive
-        if (verbose) {
-            System.err.print("Alive players: ");
-            for (int p = 0; p != players.length; ++p)
-                if (alive[p])
-                    System.err.print(players[p].name() + "  ");
-            System.err.println();
-        }
 
         for (int p = 0; p != players.length; ++p) {
             // initialize the player's action to shoot nothing
@@ -745,20 +745,17 @@ public class Gunslinger
                     Thread.sleep(50);
                 }
             } catch (InterruptedException e) {
-                System.err.println("Unexpected interruption in main thread");
             }
 
 
             // check if the thread has thrown an exception
             // or if the player time out
             if (!executor.isTerminated()) {
-                System.err.println(players[p].name() + " is time out!");
                 // disqualify the player
                 violation[p] = true;
                 continue;
             }
             if (task.exception != null) {
-                System.err.println(players[p].name() + " has malfunctional gun, no longer shoots thereafter.");
                 // disqualify the player
                 violation[p] = true;
                 continue;
@@ -783,26 +780,19 @@ public class Gunslinger
                 // the player stays
                 if (target < 0) {
                     current[p] = -1;
-                    if (verbose)
-                        System.err.println("Round " + round + ": " + players[p].name() + " did not shoot");
                 }
                 // the player shoots
                 else {
                     bullets[target]++;
                     current[p] = target;
                         
-                    if (verbose)
-                        System.err.println("Round " + round + ": " + players[p].name() + " shoots " + players[target].name());
 
                 }
             }
             else {
-                System.err.println(players[p].name() + " shoots an invalid target.");
             }
         }
             
-        if (verbose)
-            System.err.println("-------------------------");
  
         // update game stats
         for (int p = 0; p != nplayers; ++p) {
@@ -810,8 +800,6 @@ public class Gunslinger
                 alive[p] = false;
                 killed = true;
 
-                if (verbose)
-                    System.err.println("Round " + round +": " + players[p].name() + " is killed");
             }
         }
             
@@ -850,7 +838,6 @@ public class Gunslinger
             if (trace) {
 
                 try {
-                    System.err.print("$");
                     buffer.readLine();
                 } catch (Exception e) {}
                 // console.format("\nPress ENTER to proceed.\n");
@@ -884,7 +871,6 @@ public class Gunslinger
             valid = true;
 
         if (!valid) {
-            System.err.println(players[p].name() + " attempted to shoot " + players[target].name() + " <validation fails>: " + msg);            
         }
 
         return valid;
@@ -911,9 +897,6 @@ public class Gunslinger
     private void printRelationship()
     {
         for (int i = 0; i != nplayers; ++i) {
-            for (int j = 0; j != nplayers; ++j)
-                System.err.printf("%4d", relationship[i][j]);
-            System.err.println();
         }
     }
 
@@ -921,7 +904,6 @@ public class Gunslinger
     //
     private void printScores()
     {
-        System.err.println("##### Game result #####");
 
         int[] teamNo = new int[nplayers];
         int[] sortedScores = new int[nplayers];
@@ -934,8 +916,6 @@ public class Gunslinger
         sortByScore(teamNo, sortedScores);
 
         // print result
-        for (int i = 0; i != scores.length; ++i)
-            System.err.println("Player " + players[teamNo[i]].name() + ": " + sortedScores[i]);
     }
 
     // sort teams by score

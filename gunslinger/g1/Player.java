@@ -100,7 +100,7 @@ public class Player extends gunslinger.sim.Player
         updateLists(alive);
         relationship.update(prevRound,alive);
         updateFeatureVectors(prevRound, alive);
-
+        round++;
         if (!provoked){
             return -1;
         }
@@ -119,7 +119,6 @@ public class Player extends gunslinger.sim.Player
               playerToShoot = i;
           }
         }
-        round++;
         return playerToShoot;
     }
 

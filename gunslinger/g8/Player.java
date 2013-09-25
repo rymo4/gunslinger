@@ -11,10 +11,6 @@ public class Player extends gunslinger.sim.Player
     // my version no
     private int version = versions++;
 
-    private double shootFirstEnemiesFactor = 5;
-
-    private double shootFirstFriendsFactor = 2;
-
     private double isEnemyWeight = 1;
 
     private double shotAtMeWeight = 2;
@@ -32,6 +28,10 @@ public class Player extends gunslinger.sim.Player
     private boolean wasShot = false;
 
     private double retaliationFactor = 1.9;
+
+    private int roundNo = 0;
+
+    private boolean firstShot = false;
     
     // name of the team
     //
@@ -39,102 +39,7 @@ public class Player extends gunslinger.sim.Player
     {
         return "g8";
     }
-
-    public void setConfiguration(String config) {
-	shootFirstEnemiesFactor = convertConfig(config.charAt(0), 1);
-	shootFirstFriendsFactor = convertConfig(config.charAt(1), 2);
-	isEnemyWeight = convertConfig(config.charAt(2), 0);
-	shotAtMeWeight = convertConfig(config.charAt(3), 4);
-	if (shotAtMeWeight != 0) {
-	    retaliationFactor = shotAtMeWeight - 0.1;
-	}
-	shotAtFriendWeight = isEnemyWeight;
-	shotAtEnemyWeight = isEnemyWeight;
-	// roundDecayFactor = convertConfig(config.charAt(4), 3);
-	wasShotAtLastRoundFactor = isEnemyWeight;
-	weShotAtLastRoundFactor = isEnemyWeight;
-    }
-
-    public double convertConfig(int value, int mode) {
-	switch (value) {
-	case '0':
-	    switch (mode) {
-	    case 0:
-		return 0;
-	    case 1:
-		return 0;
-	    case 2:
-		return 0;
-	    case 3:
-		return 1;
-	    case 4:
-		return 0;
-	    }
-	case '1':
-	    switch (mode) {
-	    case 0:
-		return 1;
-	    case 1:
-		return 5;
-	    case 2:
-		return 2;
-	    case 3:
-		return 0.5;
-	    case 4:
-		return 1.5;
-	    }
-	case '2':
-	    switch (mode) {
-	    case 0:
-		return 1.5;
-	    case 1:
-		return 10;
-	    case 2:
-		return 100;
-	    case 3:
-		return 0;
-	    case 4:
-		return 2;
-	    }
-	}
-	return 0;
-    }
-
-    public void loadConstants() {
-	String csv = "constants.csv";
-	BufferedReader br = null;
-	String line = "";
-	String csvSplit = ",";
-
-	try {
-	    br = new BufferedReader(new FileReader(csv));
-	    while ((line = br.readLine()) != null) {
-		String[] constants = line.split(csvSplit);
-		shootFirstEnemiesFactor = Double.parseDouble(constants[0]);
-		shootFirstFriendsFactor = Double.parseDouble(constants[1]);
-		isEnemyWeight = Double.parseDouble(constants[2]);
-		shotAtMeWeight = Double.parseDouble(constants[3]);
-		shotAtFriendWeight = Double.parseDouble(constants[4]);
-		shotAtEnemyWeight = Double.parseDouble(constants[5]);
-		roundDecayFactor = Double.parseDouble(constants[6]);
-		wasShotAtLastRoundFactor = Double.parseDouble(constants[7]);
-		weShotAtLastRoundFactor = Double.parseDouble(constants[8]);
-	    }
-	} catch (FileNotFoundException e) {
-	    e.printStackTrace();
-	} catch (IOException e) {
-	    e.printStackTrace();
-	} finally {
-	    if (br != null) {
-		try {
-		    br.close();
-		} catch (IOException e) {
-		    e.printStackTrace();
-		}
-	    }
-	}
-    }
- 
+     
     // Initialize the player
     //
     public void init(int nplayers, int[] friends, int enemies[])
@@ -154,6 +59,7 @@ public class Player extends gunslinger.sim.Player
     	    history[i] = new ArrayList<Integer>();
             timesTargeted[i] = 0;
     	}
+	
 	previousTarget = -1;
     }
 
@@ -167,8 +73,9 @@ public class Player extends gunslinger.sim.Player
     //
     public int shoot(int[] prevRound, boolean[] alive)
     {
+	roundNo++;
+	boolean playPassively = isPassive(enemies.length, friends.length);
     	wasShot = false;
-    	boolean playPassively = isPassive(enemies.length, friends.length);
     	if (prevRound != null) {
       	    for (int i = 0; i < nplayers; i++) {    		
         	history[i].add(0, prevRound[i]);
@@ -176,10 +83,21 @@ public class Player extends gunslinger.sim.Player
                     timesTargeted[prevRound[i]]++;
                 }
     	    }
-    	} else if (playPassively) {
+    	} else {
 	    return -1;
 	}
-   
+	
+	if (!playPassively && !firstShot && roundNo < 8) {
+	    for (int i = 0; i < nplayers; i++) {
+		if (i != id && prevRound[i] != -1) {
+		    firstShot = true;
+		    break;
+		}
+	    }
+	    if (firstShot) {
+		playPassively = true;
+	    }
+	}
 	double maxRank = 0;
 	int target = -1;
         for (int i = 0; i != nplayers; ++i) {
@@ -190,11 +108,6 @@ public class Player extends gunslinger.sim.Player
 		    target = i;
 		}
 	    }
-	    /*
-	      if (Thread.currentThread().isInterrupted()) {
-	      previousTarget = target;
-	      return target;
-	      } */
 	}
 	if (playPassively && wasShot == false && maxRank < 2) {
 	    return -1;
@@ -205,10 +118,7 @@ public class Player extends gunslinger.sim.Player
     
     public boolean isPassive(int nEnemies, int nFriends)
     {
-    	double enemyFactor = nEnemies * shootFirstEnemiesFactor;
-    	double friendFactor = nFriends * shootFirstFriendsFactor;
-	return true;
-        // return enemyFactor < nplayers || friendFactor > nplayers;
+	return !(nplayers >= 9 && nEnemies + 2 < nFriends && nEnemies + nFriends > nplayers / 2);
     }
     
     public List<Integer> shotAtLastRound(int[] prevRound, boolean[] alive) {
@@ -243,12 +153,13 @@ public class Player extends gunslinger.sim.Player
     	    } else if (isFriend(otherTarget) && alive[otherTarget]) {
 		rank += shotAtFriendWeight * roundWeight;
     	    } else if (isEnemy(otherTarget) && alive[otherTarget]) {
-		rank -= shotAtEnemyWeight * roundWeight;
-    	    } else if (prevRound[target]!= -1 && alive[prevRound[target]]) {
-		rank += retaliationFactor * roundWeight;
-	    }
+		// rank -= shotAtEnemyWeight * roundWeight;
+    	    }
 	    roundWeight *= roundDecayFactor;
     	}
+	if (prevRound != null && alive != null  && prevRound[target] != -1 && alive[prevRound[target]]) {
+	    rank += retaliationFactor;
+	}
 	if (shotAtLastRound.contains(target) &&
 	    ((isNeutral(target) && enemies.length < friends.length + 1) || isEnemy(target))) {
 	    rank += wasShotAtLastRoundFactor;

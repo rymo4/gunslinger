@@ -1,7 +1,7 @@
 #!/bin/bash
 max=0
 best=-1
-for i in {0..80}
+for i in {0..8}
 do
   config=$(java ConstantsGenerator $i)
   scores=$(cd ../.. && java gunslinger.sim.Gunslinger gunslinger/players.list 1 2 false false false false 20 1000 $config 3>&1 1>&2- 2>&3- | tail -32)
